@@ -1,177 +1,218 @@
-## Verification Report
-
-**Change**: `data-pipeline-bootstrap`
-**Project**: `proyecto1-ds`
-**Mode**: Strict TDD manual/fresh verification
-**Date**: 2026-07-14
-
-> Native review transaction could not be registered because the repository has no `HEAD` commit (`git rev-parse HEAD` fails with `fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree`). This was treated as a dispatcher limitation only; no commits were created. 4R fresh reviews were run by subagents and all final blockers were remediated.
-
-### Completeness
-
-| Metric | Value |
-|--------|-------|
-| Planning artifacts checked | `proposal.md`, `design.md`, `tasks.md`, `apply-progress.md`, 3 delta specs |
-| Tasks checked | 46/46 in `tasks.md` complete; `apply-progress.md` also records R32 documentation remediation complete |
-| Tasks incomplete | 0 |
-| Runtime commands required | 4/4 passed |
-| Remaining blockers | None |
-
-### Build & Tests Execution
-
-**Native review registration**: not available because no git `HEAD` exists.
-
-```text
-$ git rev-parse HEAD
-fatal: ambiguous argument 'HEAD': unknown revision or path not in the working tree.
-HEAD
+```yaml
+schema: gentle-ai.verify-result/v1
+evidence_revision: sha256:ac9509b9ac3e7a1aee50f603b7a3662fed48dd7885f1b6b12dfd8114b39cbaaf
+verdict: pass
+blockers: 0
+critical_findings: 0
+requirements: 0/0
+scenarios: 0/0
+test_command: "/home/jonialen/.local/bin/uv run pytest"
+test_exit_code: 0
+test_output_hash: sha256:59b23ee45e3fb3df6c1225614934fee7546a5296a75cf3d9ceffc683cbfb1fb7
+build_command: "not configured"
+build_exit_code: 0
+build_output_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 ```
 
-**Tests**: ✅ 63 passed
+## Verification Report
+
+**Cambio**: `data-pipeline-bootstrap`  
+**Proyecto**: `proyecto1-ds`  
+**Versión**: N/A  
+**Modo**: Strict TDD  
+**Fecha**: 2026-07-14  
+**Resultado de revisión acotada**: ✅ La validación previa al reemplazo del reporte permitió continuar con lineage `review-3fd2f13a80a0fdf2`; después de persistir este reporte, `gentle-ai sdd-status` marca verificación completa y mantiene archivo bloqueado por `scope-changed` de la revisión.
+
+### Completitud
+
+| Métrica | Valor |
+|--------|-------|
+| Artefactos revisados | `proposal.md`, `design.md`, `tasks.md`, `apply-progress.md`, 3 delta specs y `openspec/config.yaml` |
+| Tareas totales | 46 |
+| Tareas completas | 46 |
+| Tareas incompletas | 0 |
+| Requisitos verificados | 7/7 |
+| Escenarios verificados | 15/15 |
+| Bloqueadores de verificación restantes | 0 |
+
+### Ejecución de build y pruebas
+
+**Build**: ➖ No configurado en `openspec/config.yaml`; no hay comando de build para este proyecto Python script-first.
+
+```text
+build_command: not configured
+build_exit_code: 0
+build_output_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+```
+
+**Tests**: ✅ 63 passed / ❌ 0 failed / ⚠️ 0 skipped
 
 ```text
 $ /home/jonialen/.local/bin/uv run pytest
+============================= test session starts ==============================
+platform linux -- Python 3.14.5, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/jonialen/Documents/uvg/s8/data/proyecto1
+configfile: pyproject.toml
+testpaths: tests
 collected 63 items
-tests/test_acquisition.py ......................
-tests/test_cli.py ........
-tests/test_consolidation.py ...................
-tests/test_diagnostics.py ..........
-tests/test_manifest.py ....
-63 passed in 0.08s
+
+tests/test_acquisition.py ......................                         [ 34%]
+tests/test_cli.py ........                                               [ 47%]
+tests/test_consolidation.py ...................                          [ 77%]
+tests/test_diagnostics.py ..........                                     [ 93%]
+tests/test_manifest.py ....                                              [100%]
+
+============================== 63 passed in 0.11s ==============================
+test_output_hash: sha256:59b23ee45e3fb3df6c1225614934fee7546a5296a75cf3d9ceffc683cbfb1fb7
 ```
 
-**Fresh no-bytecode/no-cache tests**: ✅ 63 passed
+**Pruebas frescas sin bytecode/cache**: ✅ 63 passed
 
 ```text
 $ PYTHONDONTWRITEBYTECODE=1 /home/jonialen/.local/bin/uv run pytest -p no:cacheprovider
+============================= test session starts ==============================
+platform linux -- Python 3.14.5, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/jonialen/Documents/uvg/s8/data/proyecto1
+configfile: pyproject.toml
+testpaths: tests
 collected 63 items
-63 passed in 0.08s
+
+tests/test_acquisition.py ......................                         [ 34%]
+tests/test_cli.py ........                                               [ 47%]
+tests/test_consolidation.py ...................                          [ 77%]
+tests/test_diagnostics.py ..........                                     [ 93%]
+tests/test_manifest.py ....                                              [100%]
+
+============================== 63 passed in 0.09s ==============================
+output_hash: sha256:f71d31e1d4dff35b70f2fe2f4e0b33bdea41f9f3af31657894a980f58f1d00b5
 ```
 
-**Consolidation runtime**: ✅ passed
+**Runtime de consolidación**: ✅ passed
 
 ```text
 $ /home/jonialen/.local/bin/uv run python scripts/consolidar_crudos.py
 Dataset intermedio generado: /home/jonialen/Documents/uvg/s8/data/proyecto1/data/interim/establecimientos_diversificado_raw_unificado.csv
+output_hash: sha256:cd1f3d55087146b790b3b4f6dc9d00c96da3a39624ba37809a6a1935563b73ed
 ```
 
-**Diagnostics runtime**: ✅ passed
+**Runtime de diagnóstico**: ✅ passed
 
 ```text
 $ /home/jonialen/.local/bin/uv run python scripts/diagnosticar_crudos.py
 Diagnóstico generado: /home/jonialen/Documents/uvg/s8/data/proyecto1/docs/diagnostico.md
+output_hash: sha256:71976fa1073bc1b19677c8cec97b754ca1b025d3e53cf54d8ad4ff97f6aec220
 ```
 
-**Generated data evidence**:
+**Validación de revisión acotada previa al reemplazo del reporte**: ✅ allowed
 
-| Evidence | Result |
-|----------|--------|
-| Manifest lots | 23 |
-| Manifest `html-form` lots | 23 |
-| SHA-256 checksums present | 23/23 |
-| Raw HTML artifacts | 23 in `data/raw/*.html` |
-| Interim rows | 11,867 |
-| Interim columns | 20 |
-| Provenance columns | `archivo_origen`, `departamento_origen` present |
-| Unique source files in interim | 23 |
-| Unique source departments in interim | 23 |
-| Diagnostic summary | 11,867 rows, 20 columns, 0 exact duplicates, territorial catalog `no verificable` |
+```text
+$ gentle-ai review validate --gate post-apply
+schema: gentle-ai.review-gate-result/v1
+result: allow
+allowed: true
+lineage_id: review-3fd2f13a80a0fdf2
+generation: 1
+store_revision: sha256:5d4ac562a47d7ea063a7e56b7f0fff0029d7f22f931bb22031fc33e4ea9dff80
+output_hash: sha256:6f61345f7769451f3abd5696a9810cc15d92e6ef07d794a9f9a36e78f274ac46
+```
 
-**Coverage**: ➖ skipped — no coverage tool detected in `pyproject.toml` (`pytest-cov` is not configured).
+**Cobertura**: ➖ No disponible. `openspec/config.yaml` no define `coverage_command` y el proyecto no configura `pytest-cov`.
 
-### TDD Compliance
+### Cumplimiento TDD
 
-| Check | Result | Details |
-|-------|--------|---------|
-| TDD Evidence reported | ✅ | `apply-progress.md` contains the TDD cycle evidence table. |
-| All tasks have tests | ✅ | Relevant implementation/remediation rows map to `tests/test_acquisition.py`, `tests/test_manifest.py`, `tests/test_cli.py`, `tests/test_consolidation.py`, and `tests/test_diagnostics.py`; config/docs-only rows are marked as not behavior-applicable. |
-| RED confirmed | ✅ | Historical RED evidence is recorded per row in `apply-progress.md`; test files exist now. |
-| GREEN confirmed | ✅ | Full suite passed now: 63/63. |
-| Triangulation adequate | ✅ | Acquisition, consolidation, diagnostics, CLI boundaries, malformed inputs, rollback, checksum, and documentation cases are covered by multiple behavioral tests. |
-| Safety Net for modified files | ✅ | `apply-progress.md` records prior safety-net runs before remediations. |
+| Check | Resultado | Detalles |
+|-------|-----------|----------|
+| Evidencia TDD reportada | ✅ | `apply-progress.md` contiene la tabla de evidencia de ciclo TDD. |
+| Todas las tareas tienen pruebas o justificación | ✅ | Las tareas de comportamiento enlazan con `tests/test_acquisition.py`, `tests/test_manifest.py`, `tests/test_cli.py`, `tests/test_consolidation.py` y `tests/test_diagnostics.py`; filas de configuración/documentación están justificadas. |
+| RED confirmado | ✅ | `apply-progress.md` registra fallas RED por tarea/remediación y los archivos de prueba existen. |
+| GREEN confirmado | ✅ | La suite completa pasó ahora: 63/63. |
+| Triangulación adecuada | ✅ | Hay casos múltiples para adquisición, fallback, rollback, WebForms, consolidación CSV/HTML, errores de esquema, diagnóstico y límites sin limpieza. |
+| Safety Net para archivos modificados | ✅ | `apply-progress.md` registra ejecuciones previas de safety net antes de remediaciones. |
 
-**TDD Compliance**: PASS.
+**Cumplimiento TDD**: 6/6 checks aprobados.
 
 ---
 
-### Test Layer Distribution
+### Distribución de capas de prueba
 
-| Layer | Tests | Files | Tools |
-|-------|-------|-------|-------|
+| Capa | Pruebas | Archivos | Herramientas |
+|------|---------|----------|--------------|
 | Unit | 45 | 5 | `pytest` |
-| CLI/integration | 18 | 3 | `pytest`, script modules loaded/executed |
-| E2E | 0 | 0 | Not configured |
+| Integración/CLI | 18 | 3 | `pytest`, carga/ejecución de scripts |
+| E2E | 0 | 0 | No configurado |
 | **Total** | **63** | **5** | |
 
 ---
 
-### Changed File Coverage
+### Cobertura de archivos cambiados
 
-Coverage analysis skipped — no coverage tool detected.
-
----
-
-### Assertion Quality
-
-**Assertion quality**: ✅ All inspected assertions verify real behavior. One `assert rows == []` is valid because it covers the explicit official zero-results scenario and has companion non-empty consolidation tests. Empty temp/backup assertions verify rollback/atomic-write side effects after exercised production paths.
+Análisis de cobertura omitido: no hay herramienta de cobertura detectada ni comando configurado.
 
 ---
 
-### Quality Metrics
+### Calidad de aserciones
 
-**Linter**: ➖ Not available  
-**Type Checker**: ➖ Not available
+**Calidad de aserciones**: ✅ Todas las aserciones inspeccionadas verifican comportamiento real. El caso `assert rows == []` cubre el escenario oficial de cero resultados y tiene pruebas compañeras no vacías; las aserciones sobre temporales/backups validan efectos de rollback después de ejercer rutas productivas.
 
-### Spec Compliance Matrix
+---
 
-| Requirement | Scenario | Runtime/Test Evidence | Result |
-|-------------|----------|-----------------------|--------|
-| Adquisición mixta trazable | Descarga oficial disponible | `tests/test_acquisition.py::test_descarga_oficial_y_metadatos_completos`; suite passed | ✅ COMPLIANT |
-| Adquisición mixta trazable | Fallback manual permitido | `test_registra_fallback_manual_con_error_explicito`, `test_registra_fallback_manual_cuando_mineduc_responde_html_invalido`, `test_respuesta_html_mineduc_sin_manual_falla_con_contexto_de_fallback`; suite passed | ✅ COMPLIANT |
-| Adquisición mixta trazable | HTML oficial preservado sin CSV directo | `test_captura_html_oficial_diversificado_sin_convertirlo_a_csv`; 23 real `html-form` manifest lots and raw HTML files verified | ✅ COMPLIANT |
-| Adquisición mixta trazable | Alcance no disponible | `test_documenta_alcance_disponible_y_faltante`, `test_reporta_alcance_faltante_sin_csv`; suite passed | ✅ COMPLIANT |
-| Metadatos de fuente y versión | Metadatos completos | `tests/test_manifest.py::test_manifest_escribe_metadatos_y_checksum`; manifest has source URL, date, version, coverage, department, method, checksum | ✅ COMPLIANT |
-| Unión sin limpieza | Esquemas compatibles | `test_consolida_csv_compatibles_preservando_valores_y_procedencia`; real consolidation command passed | ✅ COMPLIANT |
-| Unión sin limpieza | Esquemas incompatibles | `test_reporta_esquema_incompatible_sin_generar_salida_parcial`; suite passed | ✅ COMPLIANT |
-| Extracción estructural desde HTML oficial | HTML oficial sin CSV directo | `test_extrae_tabla_html_oficial_sin_limpiar_texto_de_celdas`; real consolidation produced 11,867 rows from 23 HTML sources | ✅ COMPLIANT |
-| Extracción estructural desde HTML oficial | HTML sin tabla esperada | `test_html_sin_tabla_esperada_reporta_error_y_no_genera_salida`, truncated/partial HTML tests; suite passed | ✅ COMPLIANT |
-| Trazabilidad por registro | Procedencia completa | `test_consolida_csv_compatibles_preservando_valores_y_procedencia`; real interim has `archivo_origen` and `departamento_origen` | ✅ COMPLIANT |
-| Trazabilidad por registro | Departamento ambiguo | `test_conserva_departamento_ambiguo_como_pendiente_para_diagnostico`; suite passed | ✅ COMPLIANT |
-| Diagnóstico rúbrica plus | Métricas obligatorias generadas | `test_genera_metricas_obligatorias_sin_modificar_csv_intermedio`; diagnostics command regenerated docs/tables | ✅ COMPLIANT |
-| Diagnóstico rúbrica plus | Catálogo oficial no disponible | `test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales`; docs report territorial catalog as `no verificable` | ✅ COMPLIANT |
-| Límites previos a limpieza | Duplicados exactos detectados | `test_genera_metricas_obligatorias_sin_modificar_csv_intermedio`; real summary reports exact duplicates without removing data | ✅ COMPLIANT |
-| Límites previos a limpieza | Duplicados parciales sospechosos | `test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales`; `problemas_potenciales.csv` includes `duplicados_parciales_diferidos` | ✅ COMPLIANT |
+### Métricas de calidad
 
-**Compliance summary**: 15/15 scenarios compliant.
+**Linter**: ➖ No disponible  
+**Type Checker**: ➖ No disponible
 
-### Correctness (Static Evidence)
+### Matriz de cumplimiento de especificación
 
-| Requirement | Status | Notes |
-|------------|--------|-------|
-| MINEDUC acquisition / raw HTML when no CSV endpoint exists | ✅ Implemented | `acquisition.py` validates official HTTPS MINEDUC URLs, captures WebForms HTML with required state fields, rejects fake CSV/HTML in CSV path, and records manual fallback when automatic acquisition fails. |
-| Manifest/checksum/provenance | ✅ Implemented | `manifest.py` validates SemVer-like versions and 64-char SHA-256; consolidation validates checksums before reading and appends provenance columns. |
-| Consolidation to interim CSV without cleaning | ✅ Implemented | `consolidation.py` preserves cell text, compares normalized headers only for schema compatibility, rejects ragged rows, and writes atomically to `data/interim`. |
-| Diagnostics outputs/tables/docs | ✅ Implemented | `diagnostics.py` generates summary, column metrics, exact duplicates, potential issues, observed domains, and `docs/diagnostico.md` from code. |
-| No final clean dataset / no cleaning scope creep | ✅ Respected | `data/clean/**`, `*clean*.csv`, and `*limpio*.csv` searches found no files; docs explicitly defer cleaning and partial duplicates. |
+| Requisito | Escenario | Prueba/evidencia runtime | Resultado |
+|-----------|-----------|--------------------------|-----------|
+| Adquisición mixta trazable | Descarga oficial disponible | `tests/test_acquisition.py::test_descarga_oficial_y_metadatos_completos`; suite aprobada | ✅ COMPLIANT |
+| Adquisición mixta trazable | Fallback manual permitido | `test_registra_fallback_manual_con_error_explicito`, `test_registra_fallback_manual_cuando_mineduc_responde_html_invalido`, `test_respuesta_html_mineduc_sin_manual_falla_con_contexto_de_fallback`; suite aprobada | ✅ COMPLIANT |
+| Adquisición mixta trazable | HTML oficial preservado sin CSV directo | `test_captura_html_oficial_diversificado_sin_convertirlo_a_csv`; manifest real conserva 23 lotes `html-form` | ✅ COMPLIANT |
+| Adquisición mixta trazable | Alcance no disponible | `test_documenta_alcance_disponible_y_faltante`, `test_reporta_alcance_faltante_sin_csv`; suite aprobada | ✅ COMPLIANT |
+| Metadatos de fuente y versión | Metadatos completos | `tests/test_manifest.py::test_manifest_escribe_metadatos_y_checksum`; manifest con URL, fecha, versión, cobertura, departamento, método y checksum | ✅ COMPLIANT |
+| Unión sin limpieza | Esquemas compatibles | `test_consolida_csv_compatibles_preservando_valores_y_procedencia`; comando real de consolidación aprobado | ✅ COMPLIANT |
+| Unión sin limpieza | Esquemas incompatibles | `test_reporta_esquema_incompatible_sin_generar_salida_parcial`; suite aprobada | ✅ COMPLIANT |
+| Extracción estructural desde HTML oficial | HTML oficial sin CSV directo | `test_extrae_tabla_html_oficial_sin_limpiar_texto_de_celdas`; consolidación real generó 11,867 filas desde 23 HTML oficiales | ✅ COMPLIANT |
+| Extracción estructural desde HTML oficial | HTML sin tabla esperada | `test_html_sin_tabla_esperada_reporta_error_y_no_genera_salida`, pruebas de HTML truncado/parcial; suite aprobada | ✅ COMPLIANT |
+| Trazabilidad por registro | Procedencia completa | `test_consolida_csv_compatibles_preservando_valores_y_procedencia`; dataset intermedio real contiene `archivo_origen` y `departamento_origen` | ✅ COMPLIANT |
+| Trazabilidad por registro | Departamento ambiguo | `test_conserva_departamento_ambiguo_como_pendiente_para_diagnostico`; suite aprobada | ✅ COMPLIANT |
+| Diagnóstico rúbrica plus | Métricas obligatorias generadas | `test_genera_metricas_obligatorias_sin_modificar_csv_intermedio`; comando real de diagnóstico regeneró tablas y Markdown | ✅ COMPLIANT |
+| Diagnóstico rúbrica plus | Catálogo oficial no disponible | `test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales`; diagnóstico documenta catálogo territorial `no verificable` | ✅ COMPLIANT |
+| Límites previos a limpieza | Duplicados exactos detectados | `test_genera_metricas_obligatorias_sin_modificar_csv_intermedio`; resumen real reporta duplicados exactos sin eliminar datos | ✅ COMPLIANT |
+| Límites previos a limpieza | Duplicados parciales sospechosos | `test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales`; `problemas_potenciales.csv` incluye `duplicados_parciales_diferidos` | ✅ COMPLIANT |
 
-### Coherence (Design)
+**Resumen de cumplimiento**: 15/15 escenarios compliant.
 
-| Decision | Followed? | Notes |
+### Correctitud (evidencia estática)
+
+| Requisito | Estado | Notas |
+|-----------|--------|-------|
+| Adquisición MINEDUC / HTML crudo cuando no hay CSV directo | ✅ Implementado | `acquisition.py` valida URLs oficiales HTTPS de MINEDUC, captura HTML WebForms con campos de estado requeridos, rechaza HTML/CSV inválidos en la ruta CSV y registra fallback manual cuando corresponde. |
+| Manifest, checksum y procedencia | ✅ Implementado | `manifest.py` valida versiones SemVer-like y SHA-256; consolidación verifica checksums antes de leer y añade columnas de linaje. |
+| Consolidación a CSV intermedio sin limpieza | ✅ Implementado | `consolidation.py` conserva texto de celdas, compara encabezados normalizados solo para compatibilidad, rechaza filas ragged y escribe de forma atómica en `data/interim`. |
+| Diagnóstico reproducible | ✅ Implementado | `diagnostics.py` genera resumen, métricas por columna, duplicados exactos, problemas potenciales, dominios observados y `docs/diagnostico.md`. |
+| No generar dataset limpio ni limpiar datos | ✅ Respetado | El alcance de limpieza, deduplicación parcial, normalización categórica y dataset final sigue diferido. |
+
+### Coherencia (diseño)
+
+| Decisión | ¿Seguida? | Notas |
 |----------|-----------|-------|
-| Script-first Python over modules in `src/proyecto1_ds/` | ✅ Yes | CLIs are thin wrappers over acquisition/manifest/consolidation/diagnostics modules. |
-| `data/raw/` as immutable raw zone with external manifest | ✅ Yes | Raw artifacts are HTML `html-form`; manifest stores source, extraction date, coverage, version, method, checksum, and error context. |
-| Append-only structural consolidation to `data/interim/` | ✅ Yes | Consolidation extracts HTML result table cells structurally and adds only lineage columns. |
-| Generated diagnostics in `outputs/tablas/` and `docs/diagnostico.md` | ✅ Yes | Runtime command regenerated all expected outputs. |
-| Missing catalogs degrade to non-verifiable | ✅ Yes | Diagnostics document territorial catalog as `no verificable` rather than declaring invalids. |
+| Python script-first con módulos en `src/proyecto1_ds/` | ✅ Sí | Los CLIs son envoltorios delgados sobre módulos de adquisición, manifest, consolidación y diagnóstico. |
+| `data/raw/` como zona cruda inmutable con manifest externo | ✅ Sí | Los artefactos crudos HTML `html-form` permanecen en `data/raw/`; el manifest guarda fuente, fecha, cobertura, versión, método, checksum y contexto de error. |
+| Consolidación estructural append-only a `data/interim/` | ✅ Sí | Se extraen tablas HTML oficiales y solo se agregan columnas de linaje. |
+| Diagnóstico generado en `outputs/tablas/` y `docs/diagnostico.md` | ✅ Sí | El comando runtime regeneró salidas esperadas. |
+| Catálogos faltantes degradan a no verificable | ✅ Sí | El diagnóstico documenta el catálogo territorial como `no verificable` y evita declarar inválidos sin evidencia. |
 
-### Issues Found
+### Issues encontrados
 
 **CRITICAL**: None  
 **WARNING**: None  
-**SUGGESTION**: Coverage/linter/type-check tooling is not configured; consider adding them in a later quality slice if the course/project requires stronger static metrics.
+**SUGGESTION**: Coverage/linter/type-check no están configurados; considerarlos en una fase posterior si el proyecto requiere métricas estáticas más fuertes.
 
-### Verdict
+**Bloqueador externo a verificación**: `gentle-ai sdd-status` reporta `archive: blocked` porque la revisión acotada quedó en `scope-changed` después de reemplazar `verify-report.md`; requiere una nueva lineage o resolución explícita de revisión para archivo.
+
+### Veredicto
 
 PASS
 
-The change satisfies proposal/spec/design/tasks under fresh runtime evidence, Strict TDD evidence is present and current tests pass, generated artifacts are reproducible, raw provenance is preserved, and no cleaning/final-dataset scope creep was found.
+El cambio cumple propuesta, specs, diseño y tareas bajo evidencia runtime fresca; Strict TDD está documentado y validado, las 63 pruebas pasan y las salidas se regeneran por script. No queda bloqueador de verificación; el archivo requiere resolver el `scope-changed` de revisión provocado por la actualización de este reporte.

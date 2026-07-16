@@ -1,10 +1,6 @@
-# Especificación: Consolidación cruda
+# Delta: Consolidación cruda
 
-## Propósito
-
-Definir la unión inicial de artefactos crudos en un conjunto intermedio, sin limpieza ni transformaciones correctivas, preservando trazabilidad por registro. Los artefactos fuente pueden ser CSV o, cuando no exista CSV directo, páginas HTML oficiales de resultados MINEDUC preservadas en `data/raw/`.
-
-## Requisitos
+## MODIFIED Requirements
 
 ### Requirement: Unión sin limpieza
 
@@ -35,19 +31,3 @@ El sistema MUST conservar 23 HTML y manifest, y regenerar desde ellos la fuente 
 - DADO un HTML ausente o discordante
 - CUANDO se consolida
 - ENTONCES no publica salida parcial e identifica la evidencia inválida.
-
-### Requisito: Trazabilidad por registro
-
-Cada registro consolidado MUST conservar `archivo_origen` y `departamento_origen`, tanto si proviene de CSV como si proviene de una tabla extraída desde HTML oficial. Si el departamento no puede determinarse con confianza, MUST quedar marcado o reportado como alcance pendiente.
-
-#### Escenario: procedencia completa
-
-- DADO que un registro proviene de un CSV o HTML identificable
-- CUANDO se agrega al dataset intermedio
-- ENTONCES conserva archivo y departamento de origen.
-
-#### Escenario: departamento ambiguo
-
-- DADO que el departamento no está disponible o es ambiguo
-- CUANDO se consolida el registro
-- ENTONCES la ambigüedad se conserva para diagnóstico posterior.

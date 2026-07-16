@@ -1,0 +1,173 @@
+import hashlib
+import subprocess
+from pathlib import Path
+
+import pytest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+ALLOWED = {
+    "openspec/specs/.gitkeep",
+    "openspec/changes/archive/.gitkeep",
+    "openspec/changes/anggie-csv-reconciliation",
+    ".atl",
+    ".pytest_cache",
+}
+
+
+def _git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args], cwd=root, check=check, capture_output=True, text=True
+    )
+
+
+def _preflight(root: Path, targets: list[str], protected: list[str]) -> None:
+    try:
+        actual = Path(_git(root, "rev-parse", "--show-toplevel").stdout.strip()).resolve()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("raíz Git inválida") from exc
+    if actual != root.resolve():
+        raise ValueError("raíz Git inválida")
+    for target in targets:
+        parts = Path(target).parts
+        ignored = any(part == "__pycache__" or part.endswith(".egg-info") for part in parts)
+        if target not in ALLOWED and not ignored:
+            raise ValueError(f"objetivo fuera de allowlist: {target}")
+    for path in protected:
+        unstaged = _git(root, "diff", "--quiet", "--", path, check=False).returncode
+        staged = _git(root, "diff", "--cached", "--quiet", "--", path, check=False).returncode
+        if unstaged or staged:
+            raise ValueError(f"ruta protegida modificada: {path}")
+
+
+def _repository(tmp_path: Path) -> Path:
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "--quiet")
+    protected = root / "manifest.json"
+    protected.write_text("baseline\n", encoding="utf-8")
+    _git(root, "add", "manifest.json")
+    _git(
+        root,
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.com",
+        "commit",
+        "--quiet",
+        "-m",
+        "baseline",
+    )
+    return root
+
+
+def test_preflight_rechaza_cwd_ajeno_y_objetivos_no_permitidos(tmp_path):
+    with pytest.raises(ValueError, match="raíz Git"):
+        _preflight(tmp_path, [".pytest_cache"], [])
+
+    root = _repository(tmp_path)
+    for target in ("docs", ".venv"):
+        with pytest.raises(ValueError, match="allowlist"):
+            _preflight(root, [target], [])
+
+
+@pytest.mark.parametrize("staged", [False, True])
+def test_preflight_rechaza_cambios_protegidos_staged_y_unstaged(tmp_path, staged):
+    root = _repository(tmp_path)
+    (root / "manifest.json").write_text("alterado\n", encoding="utf-8")
+    if staged:
+        _git(root, "add", "manifest.json")
+
+    with pytest.raises(ValueError, match="protegida"):
+        _preflight(root, [".pytest_cache"], ["manifest.json"])
+
+
+def test_recibo_anggie_documenta_objeto_parser_comando_y_metricas_reproducidas():
+    receipt = (ROOT / "docs/reconciliacion_anggie.md").read_text(encoding="utf-8")
+    evidence = (
+        "6e83a26a71d743ce08bbec592821da35df52ceef",
+        "2e27f11a8fb882594b8434f4d85b2ca75bc43b8a",
+        "ca738d5d0628613c8ad5519e15a5f20c4c1e8d536bd4510a2235e893ee3d4fd5",
+        'encoding="utf-8"',
+        "strict=False",
+        "skipinitialspace=True",
+        "12,948",
+        "11,867",
+        "1,081",
+        "12,807: retirada",
+        "git show",
+    )
+    assert all(item in receipt for item in evidence)
+
+
+def test_estado_final_elimina_allowlist_rastreada_y_preserva_protegidos():
+    removed = (
+        "openspec/specs/.gitkeep",
+        "openspec/changes/archive/.gitkeep",
+        "openspec/changes/anggie-csv-reconciliation",
+    )
+    assert all(not (ROOT / path).exists() for path in removed)
+
+    protected_hashes = {
+        "data/raw/manifest.json": "8b72e90ff85e0d646f15dcff88cf32f0cbb11bc8d605582cd7d2e46efa5f7e07",
+        "data/source/establecimientos_diversificado_mineduc.csv": "c83ac119326279b67acbbca5c9d1cada6877bb56526c76c1461fdc9b3bded82f",
+        "data/processed/establecimientos_diversificado_limpio.csv": "5de3d05752f38f249180e08f46369e7d6225a5b8acc7c77535b40a4ffac78c03",
+        "outputs/tablas/bitacora_limpieza.csv": "8a7faadf69fb15531d62d4bf1ae08e35c9382ce6c27c005d75960e078f06fe34",
+        "outputs/tablas/diagnostico_columnas.csv": "e41123edcb09b3ae78cbf6f8555d317d0f55f222ce2132db70a5de1d1f06d69f",
+        "outputs/tablas/dominios_observados.csv": "c95d4905a15854653a64b720bcc956c2151d2dda3569ee33de0de60fa1896f19",
+        "outputs/tablas/duplicados_exactos.csv": "81cc2a2a3e2c9afa93030cd73e31966889297b9cd65730683ef40915e0f89bd3",
+        "outputs/tablas/problemas_potenciales.csv": "9ccfa68b289547254ac47edb4fb646bbb1fa9f1e4c4b971959d30dd08df40170",
+        "outputs/tablas/reporte_calidad_antes_despues.csv": "3e10db84354614849d23d43f34466aa0a990b69aa1a90ba528d4060bbf75c962",
+        "outputs/tablas/resumen_dataset.csv": "2033301b36a70926a0a7dd45313e6298cbdfb5e59227964199131dbf1ad7bb2a",
+    }
+    for relative, expected in protected_hashes.items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
+    assert len(tuple((ROOT / "data/raw").glob("*.html"))) == 23
+    assert (ROOT / ".venv").is_dir()
+
+
+def _planning_rows(prefix: str) -> dict[str, list[str]]:
+    plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
+    rows = {}
+    for line in plan.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if cells and cells[0].startswith(prefix):
+            rows[cells[0]] = cells
+    return rows
+
+
+def test_plan_cubre_todos_los_requisitos_con_campos_verificables():
+    expected = {
+        "R1", "R2", "R3a", "R3b", "R3c", "R3d", "R3e", "R3f", "R3g", "R3h",
+        "R4a", "R4b", "R4c", "R5a", "R5b", "R5c", "R5d", "R5e", "R5f", "R5g",
+        "R5h", "R5i", "R6", "R7", "R8", "R9", "R10", "RE", "RT",
+    }
+    rows = _planning_rows("R")
+    assert set(rows) == expected
+    assert all(len(cells) == 10 and all(cells) for cells in rows.values())
+    assert {cells[3] for cells in rows.values()} <= {
+        "Completado", "Parcial", "Faltante", "Incierto"
+    }
+
+
+def test_plan_asigna_git_y_code_book_a_cada_integrante():
+    rows = _planning_rows("A-")
+    assert set(rows) == {"A-Anggie", "A-Iris", "A-Jonathan"}
+    assert all(len(cells) == 7 and all(cells) for cells in rows.values())
+    assert all("commit" in cells[5].lower() and "Code Book" in cells[4] for cells in rows.values())
+
+
+def test_plan_mantiene_entregables_futuros_y_rutas_canonicas():
+    plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
+    for pending in (
+        "catálogo territorial", "duplicados parciales", "excepciones telefónicas",
+        "validación final", "reporte de calidad completo", "Code Book Markdown/PDF",
+        "README", "auditoría de entrega",
+    ):
+        assert pending in plan
+    assert "Planificado/no implementado" in plan
+    assert "data/source/establecimientos_diversificado_mineduc.csv" in plan
+    assert "data/processed/establecimientos_diversificado_limpio.csv" in plan
+    assert "data/interim/" not in plan and "data/clean/" not in plan

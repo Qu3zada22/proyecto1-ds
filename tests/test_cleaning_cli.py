@@ -2,10 +2,21 @@ import csv
 import importlib.util
 from pathlib import Path
 
-from proyecto1_ds.cleaning import CleaningOutputError
+from proyecto1_ds.cleaning import DEFAULT_SOURCE_CSV, CleaningOutputError
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "limpiar_dataset.py"
+
+
+def test_cli_expone_source_csv_sin_alias_interim(tmp_path):
+    cli = _load_cli_module()
+    cli.ROOT = tmp_path
+
+    parser = cli.build_parser()
+    args = parser.parse_args([])
+    assert DEFAULT_SOURCE_CSV == Path("data/source/establecimientos_diversificado_mineduc.csv")
+    assert args.source_csv == tmp_path / DEFAULT_SOURCE_CSV
+    assert "--" + "interim" + "-csv" not in parser.format_help()
 
 
 def _load_cli_module():
@@ -24,8 +35,8 @@ def _write_interim_csv(path: Path) -> None:
         writer.writerow(["001", " SIN DATO ", ""])
 
 
-def test_cli_limpia_interim_default_y_escribe_salidas_permitidas(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+def test_cli_limpia_fuente_default_y_escribe_salidas_permitidas(tmp_path, capsys):
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     original_interim = interim_csv.read_bytes()
     cli = _load_cli_module()
@@ -60,15 +71,15 @@ def test_cli_reporta_entrada_ausente_sin_traceback_ni_parciales(tmp_path, capsys
     assert not (tmp_path / "outputs" / "tablas").exists()
 
 
-def test_cli_restringe_entrada_a_data_interim_y_salidas_a_raices_permitidas(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+def test_cli_restringe_entrada_a_data_source_y_salidas_a_raices_permitidas(tmp_path, capsys):
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     outside_interim = tmp_path / "outside" / "source.csv"
     _write_interim_csv(outside_interim)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 
-    rejected_interim = cli.main(["--interim-csv", str(outside_interim)])
+    rejected_interim = cli.main(["--source-csv", str(outside_interim)])
     rejected_output = cli.main(["--output-file", str(tmp_path / "data" / "escape.csv")])
     rejected_tables = cli.main(["--tables-dir", str(tmp_path / "outputs" / "other")])
 
@@ -76,7 +87,7 @@ def test_cli_restringe_entrada_a_data_interim_y_salidas_a_raices_permitidas(tmp_
     assert rejected_interim == 1
     assert rejected_output == 1
     assert rejected_tables == 1
-    assert "data/interim" in captured.err
+    assert "data/source" in captured.err
     assert "data/processed" in captured.err
     assert "outputs/tablas" in captured.err
     assert "Traceback" not in captured.err
@@ -84,24 +95,24 @@ def test_cli_restringe_entrada_a_data_interim_y_salidas_a_raices_permitidas(tmp_
     assert not (tmp_path / "outputs" / "other").exists()
 
 
-def test_cli_rechaza_data_interim_symlink_a_directorio_externo_sin_crear_salidas(tmp_path, capsys):
-    outside_interim = tmp_path / "outside" / "interim"
-    outside_csv = outside_interim / "establecimientos_diversificado_raw_unificado.csv"
+def test_cli_rechaza_data_source_symlink_a_directorio_externo_sin_crear_salidas(tmp_path, capsys):
+    outside_interim = tmp_path / "outside" / "source"
+    outside_csv = outside_interim / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(outside_csv)
     data_dir = tmp_path / "data"
     data_dir.mkdir()
-    symlinked_interim = data_dir / "interim"
+    symlinked_interim = data_dir / "source"
     symlinked_interim.symlink_to(outside_interim, target_is_directory=True)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 
-    exit_code = cli.main(["--interim-csv", str(symlinked_interim / outside_csv.name)])
+    exit_code = cli.main(["--source-csv", str(symlinked_interim / outside_csv.name)])
 
     captured = capsys.readouterr()
     assert exit_code == 1
     assert captured.out == ""
     assert "Error de limpieza" in captured.err
-    assert "data/interim" in captured.err
+    assert "data/source" in captured.err
     assert "Traceback" not in captured.err
     assert not (tmp_path / "data" / "processed").exists()
     assert not (tmp_path / "outputs" / "tablas").exists()
@@ -127,7 +138,7 @@ def test_cli_argumento_desconocido_devuelve_exit_1_con_uso_sin_traceback(tmp_pat
 
 
 def test_cli_rechaza_data_processed_como_archivo_de_salida_sin_crear_directorio(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
@@ -144,7 +155,7 @@ def test_cli_rechaza_data_processed_como_archivo_de_salida_sin_crear_directorio(
 
 
 def test_cli_rechaza_directorio_existente_como_archivo_de_salida_sin_mutarlo(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     processed_root = tmp_path / "data" / "processed"
     processed_root.mkdir(parents=True)
@@ -173,7 +184,7 @@ def test_cli_rechaza_directorio_existente_como_archivo_de_salida_sin_mutarlo(tmp
 
 
 def test_cli_permite_archivo_csv_valido_bajo_data_processed(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "custom_clean.csv"
     cli = _load_cli_module()
@@ -191,7 +202,7 @@ def test_cli_permite_archivo_csv_valido_bajo_data_processed(tmp_path, capsys):
 
 
 def test_cli_reporta_error_de_escritura_sin_traceback(tmp_path, capsys, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     cli = _load_cli_module()
     cli.ROOT = tmp_path

@@ -75,4 +75,4 @@ Como no hubo CSV directo disponible, se preservó el contenido fuente legítimo 
 
 ## Siguiente paso manual
 
-Si el curso exige estrictamente CSV descargado desde el sitio, el siguiente paso es validar manualmente en navegador el flujo del botón `Exportar a Excel` y capturar qué campos WebForms (`__VIEWSTATE`, `__EVENTVALIDATION`, evento y coordenadas del botón) requiere. El pipeline actual ya puede consolidar los HTML oficiales preservados hacia CSV intermedio mediante código reproducible, dejando claro que el origen crudo fue HTML y no un CSV descargado.
+Si el curso exige estrictamente CSV descargado desde el sitio, el siguiente paso es validar manualmente en navegador el flujo del botón `Exportar a Excel` y capturar qué campos WebForms (`__VIEWSTATE`, `__EVENTVALIDATION`, evento y coordenadas del botón) requiere. El pipeline actual ya puede consolidar los HTML oficiales preservados hacia `data/source/establecimientos_diversificado_mineduc.csv` mediante código reproducible, dejando claro que el origen crudo fue HTML y no un CSV descargado.

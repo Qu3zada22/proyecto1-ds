@@ -6,23 +6,20 @@ Definir el diagnóstico reproducible previo a limpieza, priorizando `docs/diagno
 
 ## Requisitos
 
-### Requisito: Diagnóstico rúbrica plus
+### Requirement: Diagnóstico rúbrica plus
 
-El sistema MUST generar métricas de filas, columnas, tipos, faltantes, únicos, duplicados exactos, dominios, formatos y problemas potenciales. También SHOULD reportar patrones sospechosos de texto o dominio cuando sea viable.
+El sistema MUST diagnosticar desde `data/source/establecimientos_diversificado_mineduc.csv` filas, columnas, tipos, faltantes, únicos, duplicados, dominios, formatos y problemas; SHOULD reportar patrones sospechosos.
+(Anteriormente: consumía `data/interim/`.)
 
-#### Escenario: métricas obligatorias generadas
+#### Scenario: métricas reproducibles
+- DADO la fuente válida
+- CUANDO se diagnostica
+- ENTONCES documento y tablas se regeneran mediante código.
 
-- DADO que existe el dataset intermedio crudo
-- CUANDO se ejecuta el diagnóstico
-- ENTONCES `docs/diagnostico.md` resume las métricas requeridas
-- Y las tablas provienen de código reproducible.
-
-#### Escenario: catálogo oficial no disponible
-
-- DADO que no se encuentra catálogo oficial de departamentos o municipios
-- CUANDO se evalúan dominios territoriales
-- ENTONCES el diagnóstico documenta la limitación
-- Y evita declarar inválidos sin evidencia suficiente.
+#### Scenario: catálogo oficial ausente
+- DADO que falta el catálogo oficial
+- CUANDO se evalúan dominios
+- ENTONCES se documenta y no se declaran inválidos sin evidencia.
 
 ### Requisito: Límites previos a limpieza
 

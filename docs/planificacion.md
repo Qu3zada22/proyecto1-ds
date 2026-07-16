@@ -1,70 +1,60 @@
-# Planificación del Proyecto 1: Obtención y Limpieza de Datos
+# Plan actual de cierre del Proyecto 1
 
-Este documento divide el proyecto en **slices de trabajo**. Cada slice tiene un objetivo claro, entregables verificables y criterios mínimos de aceptación. La idea es avanzar de forma ordenada: primero preservar la data cruda, después diagnosticar, luego planificar la limpieza y finalmente ejecutar, validar y documentar.
+Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue evidencia ya disponible de trabajo futuro: **planificar no equivale a implementar**.
 
-## Resumen de slices
+## Contrato y estado ejecutivo
 
-| Slice | Fase | Objetivo principal | Entregable principal |
-| --- | --- | --- | --- |
-| 0 | Preparación | Definir estructura reproducible del proyecto | Carpetas base y convenciones |
-| 1 | Obtención | Resguardar datos crudos oficiales del MINEDUC | HTML crudos `html-form` en `data/raw/` |
-| 2 | Consolidación inicial | Extraer tablas crudas sin limpiarlas todavía | CSV intermedio en `data/interim/` |
-| 3 | Diagnóstico | Medir el estado real de la data cruda con código | `docs/diagnostico.md` y tablas |
-| 4 | Plan de limpieza | Definir reglas antes de modificar datos | `docs/plan_limpieza.md` |
-| 5 | Limpieza base | Normalizar nulos, tipos y texto | Dataset limpio preliminar |
-| 6 | Consistencia y duplicados | Detectar dominios inválidos, duplicados exactos y parciales | Bitácora de decisiones |
-| 7 | Validación automática | Probar que el dataset final cumple reglas de calidad | Script/reporte de validación |
-| 8 | Reporte comparativo | Demostrar mejora antes vs. después | `docs/reporte_calidad.md` |
-| 9 | Code Book | Documentar variables, dominios, fuente y tratamientos | `docs/codebook.md` y PDF |
-| 10 | Entrega final | Consolidar archivos finales del proyecto | CSV limpio final y repositorio ordenado |
+- Fuente canónica: `data/source/establecimientos_diversificado_mineduc.csv`.
+- Salida limpia actual: `data/processed/establecimientos_diversificado_limpio.csv`.
+- Procedencia inmutable: 23 HTML en `data/raw/` y `data/raw/manifest.json`.
+- Estados: **Completado** (aceptación demostrada), **Parcial** (hay evidencia, queda brecha), **Faltante** (sin entregable aceptable) e **Incierto** (requiere una decisión o fuente).
+- Todo elemento marcado **Planificado/no implementado** permanece fuera del estado actual.
 
----
+## Matriz de requisitos
 
-## Slice 0: Preparación del proyecto
+| ID | Fuente | Requisito | Estado | Evidencia actual | Brecha | Responsable | Dependencia | Aceptación | PR |
+|---|---|---|---|---|---|---|---|---|---|
+| R1 | Paso 1.1 | Descargar cobertura nacional hasta Diversificado | Completado | 23 HTML + manifest | Ninguna del alcance preservado | Jonathan | MINEDUC | 23 departamentos trazables y hashes válidos | PR1 |
+| R2 | Paso 1.2 | Guardar datos crudos en CSV | Completado | CSV canónico 11,867×20 | Ninguna | Jonathan | R1 | Regeneración byte-idéntica desde HTML | PR1 |
+| R3a | Paso 2.3a | Filas y columnas por código | Completado | `resumen_dataset.csv` | Ninguna | Anggie | R2 | 11,867×20 reproducible | Hecho |
+| R3b | Paso 2.3b | Tipos por variable | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Las 20 variables tienen tipo reportado | Hecho |
+| R3c | Paso 2.3c | Faltantes: cantidad y porcentaje | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteos y porcentajes para 20 variables | Hecho |
+| R3d | Paso 2.3d | Únicos por columna | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteo para 20 variables | Hecho |
+| R3e | Paso 2.3e | Duplicados exactos | Completado | `duplicados_exactos.csv` | Ninguna | Anggie | R2 | Conteo reproducible: 0 | Hecho |
+| R3f | Paso 2.3f | Dominios e inconsistencias | Parcial | `dominios_observados.csv` | Falta catálogo oficial territorial | Iris | Catálogo versionado | Inválidos sustentados, no inferidos | PR4 |
+| R3g | Paso 2.3g | Formatos inconsistentes | Completado | `problemas_potenciales.csv` | Ninguna para diagnóstico inicial | Anggie | R2 | Hallazgos y conteos regenerables | Hecho |
+| R3h | Paso 2.3h | Problemas potenciales explícitos | Completado | 18 problemas en diagnóstico | Ninguna para diagnóstico inicial | Anggie | R3a–R3g | Tabla y resumen coinciden | Hecho |
+| R4a | Paso 3.4a | Problema por variable | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada variable/problema está cubierto | Hecho |
+| R4b | Paso 3.4b | Regla exacta y justificación | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Regla previa a transformación | Hecho |
+| R4c | Paso 3.4c | Riesgo de cada regla | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada regla declara riesgo | Hecho |
+| R5a | Paso 4.5a | Nulos, vacíos y marcadores | Parcial | CSV limpio + bitácora | Faltan excepciones finales | Anggie | Reconciliación | Marcadores resueltos y auditados | PR5 |
+| R5b | Paso 4.5b | Tipos correctos | Parcial | Limpieza conservadora | Falta validación final de tipos | Jonathan | R5a–R5h | Tipos esperados pasan pruebas | PR6 |
+| R5c | Paso 4.5c | Normalización de texto | Parcial | Espacios/NBSP normalizados | Falta revisión semántica final | Anggie | Bitácora | Cero bordes; decisiones trazadas | PR5 |
+| R5d | Paso 4.5d | Categorías consistentes | Parcial | Categorías conservadas | Falta catálogo y resolución territorial | Iris | R3f | Variantes justificadas y probadas | PR4 |
+| R5e | Paso 4.5e | Formatos uniformes | Parcial | Formatos diagnosticados | Faltan excepciones telefónicas | Anggie | Revisión humana | Teléfonos/códigos con regla y excepciones | PR5 |
+| R5f | Paso 4.5f | Valores inválidos | Parcial | Casos potenciales reportados | Falta catálogo y revisión telefónica | Iris | R3f, R5e | Cero inválidos conocidos o excepción | PR5 |
+| R5g | Paso 4.5g | Duplicados exactos y parciales | Faltante | Exactos=0; parciales diferidos | Falta reconciliación y bitácora manual | Anggie | CSV alterno accesible | Candidatos revisados; sin borrado automático | PR5 |
+| R5h | Paso 4.5h | Consistencia cruzada | Faltante | Limitación documentada | Falta departamento–municipio oficial | Iris | Catálogo versionado | Todas las parejas válidas o exceptuadas | PR4 |
+| R5i | Paso 4.5i | Variables derivadas justificadas | Incierto | No se declararon derivadas finales | Decidir necesidad y documentarla | Iris | Esquema final | Code Book declara derivadas o “ninguna” | PR7 |
+| R6 | Control 6 | Bitácora de transformaciones | Parcial | `bitacora_limpieza.csv` | Falta incorporar decisiones futuras | Anggie | R5 | Una fila por transformación/decisión | PR5 |
+| R7 | Control 7 | Validación automática final | Faltante | Pruebas del pipeline, no cierre completo | Falta validación final de toda la rúbrica | Jonathan | R4–R6 | Suite prueba siete controles y emite reporte | PR6 |
+| R8 | Control 8 | Comparación antes/después | Parcial | CSV comparativo preliminar | Falta reporte de calidad completo | Jonathan | R7 | Diez métricas justificadas y regenerables | PR6 |
+| R9 | Cierre 9 | Único conjunto limpio final | Parcial | CSV limpio actual 11,867×19 | Decisiones territoriales/duplicados pendientes | Jonathan | R5–R8 | Archivo único pasa validación final | PR7 |
+| R10 | Cierre 10 | Code Book completo | Faltante | Sin Markdown/PDF final | Faltan metadatos por variable y ensamblaje | Jonathan | R5–R9 | 19 variables + procedencia + versión; PDF reproducible | PR7 |
+| RE | Material final | Código, repositorio, área, PDF y CSV | Faltante | Código/repositorio/CSV parciales | Faltan Code Book, README y auditoría de entrega | Jonathan | R7–R10 | Cinco materiales enlazados y reproducibles | PR7 |
+| RT | Trabajo en equipo | Contribución significativa visible | Parcial | Historial Git y docs existentes | Falta cierre verificable por integrante | Equipo | Asignaciones siguientes | Cada persona: commit identificable + sección Code Book | PR4–PR7 |
 
-### Objetivo
+## Asignaciones y contribución visible
 
-Crear una estructura de trabajo clara, reproducible y fácil de revisar.
+| ID | Persona | Entregable | Aceptación | Aporte Code Book | Evidencia Git | Dependencias |
+|---|---|---|---|---|---|---|
+| A-Anggie | Anggie | Reconciliación, métricas, duplicados parciales y excepciones telefónicas | Comando reproducible; bitácora sin borrado automático; excepciones justificadas | Code Book: procedencia, métricas y tratamientos | Uno o más commit identificables que modifiquen evidencia y su sección | CSV alterno; diagnóstico; revisión humana |
+| A-Iris | Iris | Catálogo territorial y consistencia departamento–municipio | Fuente oficial versionada; validación legible por máquina; excepciones trazadas | Code Book: dominios, valores posibles y variables derivadas | Uno o más commit identificables que modifiquen catálogo/validación y su sección | Fuente oficial; esquema final |
+| A-Jonathan | Jonathan | Integración, validación final, reporte, README, Markdown/PDF y auditoría | Suite verde; reporte completo; PDF reproducible; checklist de entrega | Code Book: ensamblaje, versión y tratamientos finales | Uno o más commit identificables que modifiquen integración y su sección | Entregas de Anggie e Iris |
 
-### Tareas principales
+## Evidencia detallada de fases previas
 
-- Crear carpetas para datos crudos, intermedios, limpios, documentación, scripts y salidas.
-- Definir nombres consistentes para archivos.
-- Separar claramente datos crudos de datos modificados.
-- Acordar que ningún archivo en `data/raw/` debe modificarse manualmente.
-
-### Estructura sugerida
-
-```txt
-data/
-  raw/
-  interim/
-  clean/
-docs/
-  instrucciones.md
-  planificacion.md
-  diagnostico.md
-  plan_limpieza.md
-  reporte_calidad.md
-  codebook.md
-outputs/
-  tablas/
-  reportes/
-src/ o notebooks/
-  01_obtencion.py
-  02_diagnostico.py
-  03_limpieza.py
-  04_validacion.py
-  05_export_final.py
-```
-
-### Criterios de aceptación
-
-- Existe una estructura de carpetas entendible.
-- Los datos crudos tienen una ubicación única.
-- El proyecto puede ser navegado por otra persona sin explicación verbal.
-
----
+Las fases siguientes sustentan los estados completados de la matriz; los criterios futuros se controlan exclusivamente mediante la matriz y la ruta crítica.
 
 ## Slice 1: Obtención y resguardo de datos
 
@@ -104,11 +94,11 @@ Extraer estructuralmente las tablas de los artefactos crudos en un solo dataset 
 - Leer los HTML oficiales `html-form` preservados mediante código.
 - Revisar que las tablas extraídas compartan estructura compatible.
 - Agregar una variable de trazabilidad si hace falta, por ejemplo `archivo_origen` o `departamento_origen`.
-- Exportar un CSV intermedio en `data/interim/` sin limpiar ni normalizar valores.
+- Exportar la fuente canónica en `data/source/` sin limpiar ni normalizar valores.
 
 ### Entregables
 
-- Dataset unido preliminar, por ejemplo `data/interim/establecimientos_diversificado_raw_unificado.csv`.
+- Dataset unido preliminar en `data/source/establecimientos_diversificado_mineduc.csv`.
 
 ### Criterios de aceptación
 
@@ -175,202 +165,21 @@ Definir la estrategia de limpieza antes de tocar los datos.
 
 ---
 
-## Slice 5: Limpieza base
-
-### Objetivo
-
-Aplicar las transformaciones fundamentales para obtener una versión limpia preliminar.
-
-### Tareas principales
-
-- Convertir cadenas vacías, espacios, `N/A`, `NULL`, `-`, `.`, `Sin dato` y equivalentes a valores faltantes consistentes.
-- Corregir tipos de datos.
-- Normalizar texto: espacios, mayúsculas/minúsculas, tildes y caracteres invisibles.
-- Estandarizar nombres de columnas si es necesario.
-- Registrar cada transformación en una bitácora.
-
-### Entregables
-
-- Dataset limpio preliminar en `data/interim/` o `data/clean/`.
-- Bitácora de transformaciones.
-
-### Criterios de aceptación
-
-- Los textos no tienen espacios al inicio o al final.
-- Los tipos de datos son coherentes con el significado de cada variable.
-- Los valores faltantes se representan de forma uniforme.
-
----
-
-## Slice 6: Consistencia, dominios y duplicados
-
-### Objetivo
-
-Resolver problemas más profundos: categorías inconsistentes, valores inválidos, consistencia cruzada y duplicados.
-
-### Tareas principales
-
-- Validar departamentos y municipios contra un catálogo oficial o lista controlada.
-- Revisar teléfonos, códigos y campos con formato esperado.
-- Detectar duplicados exactos.
-- Detectar posibles duplicados parciales usando similitud de cadenas.
-- Documentar cada decisión: conservar, corregir, fusionar o descartar.
-- Revisar contradicciones entre variables relacionadas.
-
-### Entregables
-
-- Bitácora de duplicados y decisiones.
-- Dataset limpio candidato.
-
-### Criterios de aceptación
-
-- No se eliminan duplicados parciales automáticamente sin análisis.
-- Las categorías equivalentes quedan unificadas.
-- Los valores inválidos detectados en el diagnóstico quedan corregidos o documentados.
-
----
-
-## Slice 7: Validación automática de calidad
-
-### Objetivo
-
-Comprobar con pruebas automáticas que el dataset limpio cumple los estándares definidos.
-
-### Tareas principales
-
-- Crear validaciones para duplicados exactos.
-- Validar ausencia de espacios iniciales/finales.
-- Validar formato de teléfonos si existe esa variable.
-- Validar departamentos y municipios.
-- Validar tipos de datos esperados.
-- Validar categorías normalizadas.
-- Validar ausencia de valores inválidos detectados previamente.
-
-### Entregables
-
-- Script de validación, por ejemplo `src/04_validacion.py`.
-- Reporte de validación en `outputs/reportes/`.
-
-### Criterios de aceptación
-
-- Las pruebas pueden ejecutarse nuevamente desde cero.
-- El resultado indica claramente qué pasó y qué falló si hay errores.
-- El dataset limpio pasa las reglas críticas de calidad.
-
----
-
-## Slice 8: Reporte de calidad antes vs. después
-
-### Objetivo
-
-Demostrar cuantitativamente la mejora lograda por la limpieza.
-
-### Tareas principales
-
-- Comparar registros antes y después.
-- Comparar variables antes y después.
-- Comparar valores faltantes.
-- Comparar duplicados exactos y posibles duplicados.
-- Comparar formatos inconsistentes.
-- Comparar categorías inconsistentes.
-- Resumir errores corregidos.
-
-### Entregables
-
-- `docs/reporte_calidad.md`.
-- Tabla comparativa antes/después.
-
-### Criterios de aceptación
-
-- El reporte usa métricas calculadas por código.
-- Cualquier cambio en número de filas o columnas está justificado.
-- La mejora no se describe solo con palabras: se demuestra con números.
-
----
-
-## Slice 9: Libro de códigos
-
-### Objetivo
-
-Documentar el dataset final para que cualquier persona pueda entenderlo y reutilizarlo.
-
-### Tareas principales
-
-- Describir cada variable.
-- Indicar tipo de dato final.
-- Indicar dominio permitido.
-- Listar valores posibles cuando aplique.
-- Documentar tratamiento aplicado durante limpieza.
-- Documentar variables derivadas si existen.
-- Incluir fecha exacta de extracción.
-- Incluir fuente de origen.
-- Indicar versión del conjunto limpio.
-
-### Entregables
-
-- `docs/codebook.md`.
-- Versión final en PDF.
-
-### Criterios de aceptación
-
-- Cada variable del dataset final aparece en el Code Book.
-- El documento explica qué se hizo con cada variable durante la limpieza.
-- La fuente, fecha de extracción y versión del dataset están documentadas.
-
----
-
-## Slice 10: Entrega final
-
-### Objetivo
-
-Preparar los materiales finales solicitados por la rúbrica.
-
-### Tareas principales
-
-- Exportar un único CSV limpio y unificado.
-- Revisar que el pipeline pueda ejecutarse de principio a fin.
-- Confirmar que el repositorio contiene código, datos, documentación y entregables.
-- Generar PDF final del Code Book.
-- Revisar contribuciones del equipo en repositorio y documentación.
-
-### Entregables finales
-
-- Código fuente del pipeline en `.py`, `.ipynb`, `.r` o `.rmd`.
-- Repositorio completo.
-- Libro de códigos en Markdown o Google Docs.
-- Libro de códigos en PDF.
-- Dataset final limpio en `.csv`.
-
-### Criterios de aceptación
-
-- Existe un archivo único en `data/clean/` listo para análisis.
-- El proceso completo es reproducible.
-- Los documentos finales explican qué se hizo, por qué se hizo y cómo verificarlo.
-
----
-
-## Orden recomendado de ejecución
-
-1. Slice 0: Preparación.
-2. Slice 1: Obtención.
-3. Slice 2: Consolidación inicial.
-4. Slice 3: Diagnóstico.
-5. Slice 4: Plan de limpieza.
-6. Slice 5: Limpieza base.
-7. Slice 6: Consistencia y duplicados.
-8. Slice 7: Validación automática.
-9. Slice 8: Reporte antes/después.
-10. Slice 9: Code Book.
-11. Slice 10: Entrega final.
-
-## Regla de oro del proyecto
-
-Cada modificación debe poder responder estas preguntas:
-
-1. ¿Qué problema tenía la variable?
-2. ¿Cuántos registros estaban afectados?
-3. ¿Qué regla se aplicó?
-4. ¿Por qué esa regla es razonable?
-5. ¿Qué riesgo tiene esa transformación?
-
-Si una limpieza no puede responder eso, todavía no está suficientemente justificada.
+## Ruta crítica y próximos PR
+
+```text
+fuente canónica (hecho) → catálogo territorial → reconciliación/duplicados y teléfonos
+→ validación final → reporte de calidad completo → Code Book Markdown/PDF → README → auditoría de entrega
+```
+
+1. **PR4 — Planificado/no implementado:** Iris entrega catálogo territorial, consistencia cruzada y dominios del Code Book.
+2. **PR5 — Planificado/no implementado:** Anggie cierra reconciliación de fuente, duplicados parciales, excepciones telefónicas, métricas, bitácora y procedencia.
+3. **PR6 — Planificado/no implementado:** Jonathan integra validación final y reporte de calidad completo.
+4. **PR7 — Planificado/no implementado:** equipo cierra dataset; Jonathan ensambla Code Book Markdown/PDF, README y auditoría de entrega.
+
+## Control de cierre
+
+- Ningún PR futuro puede declararse completo solo por estar descrito aquí.
+- Cada aceptación debe apuntar a código, prueba, dato o documento versionado y al commit de su responsable.
+- No se modifica la procedencia para resolver una discrepancia; se registra y se revisa.
+- La entrega se bloquea mientras R7, R10, RE o RT no estén **Completado**.

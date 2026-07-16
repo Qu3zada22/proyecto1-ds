@@ -4,10 +4,21 @@ from pathlib import Path
 
 import pytest
 
-from proyecto1_ds.diagnostics import DiagnosticCsvError, DiagnosticOutputError, generate_diagnostics, write_diagnostics
+from proyecto1_ds.diagnostics import DEFAULT_SOURCE_CSV, DiagnosticCsvError, DiagnosticOutputError, generate_diagnostics, write_diagnostics
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "diagnosticar_crudos.py"
+CANONICAL_SOURCE = Path("data/source/establecimientos_diversificado_mineduc.csv")
+
+
+def test_default_y_cli_consumen_solo_fuente_canonica(tmp_path):
+    cli = _load_cli_module()
+    cli.ROOT = tmp_path
+
+    args = cli.build_parser().parse_args([])
+    assert DEFAULT_SOURCE_CSV == CANONICAL_SOURCE
+    assert args.source_csv == tmp_path / CANONICAL_SOURCE
+    assert "--" + "interim" + "-csv" not in cli.build_parser().format_help()
 
 
 def _write_interim_csv(path: Path) -> None:
@@ -27,7 +38,7 @@ def _read_table(path: Path) -> list[dict[str, str]]:
 
 
 def test_genera_metricas_obligatorias_sin_modificar_csv_intermedio(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     original_content = interim_csv.read_text(encoding="utf-8")
 
@@ -53,7 +64,7 @@ def test_genera_metricas_obligatorias_sin_modificar_csv_intermedio(tmp_path):
 
 
 def test_genera_dominios_observados_con_frecuencias_sin_limpiar_valores(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
 
     report = generate_diagnostics(interim_csv)
@@ -84,7 +95,7 @@ def test_rechaza_csv_intermedio_malformado_sin_generar_diagnostico(tmp_path):
 
 
 def test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
 
     report = generate_diagnostics(interim_csv)
@@ -99,7 +110,7 @@ def test_reporta_patrones_sospechosos_y_difiere_duplicados_parciales(tmp_path):
 
 
 def test_reporta_encabezados_sospechosos_sin_renombrar_columnas(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     interim_csv.parent.mkdir(parents=True, exist_ok=True)
     interim_csv.write_text("\xa0,codigo\n,01-01-0007-46\n", encoding="utf-8")
 
@@ -117,7 +128,7 @@ def test_reporta_encabezados_sospechosos_sin_renombrar_columnas(tmp_path):
 
 
 def test_escribe_tablas_y_diagnostico_markdown_generados_por_codigo(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     output_dir = tmp_path / "outputs" / "tablas"
     docs_path = tmp_path / "docs" / "diagnostico.md"
     _write_interim_csv(interim_csv)
@@ -169,7 +180,7 @@ def test_escribe_tablas_y_diagnostico_markdown_generados_por_codigo(tmp_path):
 
 
 def test_write_diagnostics_preserva_salidas_previas_si_falla_generacion(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     output_dir = tmp_path / "outputs" / "tablas"
     docs_path = tmp_path / "docs" / "diagnostico.md"
     _write_interim_csv(interim_csv)
@@ -193,7 +204,7 @@ def test_write_diagnostics_preserva_salidas_previas_si_falla_generacion(tmp_path
 
 
 def test_write_diagnostics_reporta_contexto_si_falla_restauracion(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     output_dir = tmp_path / "outputs" / "tablas"
     docs_path = tmp_path / "docs" / "diagnostico.md"
     _write_interim_csv(interim_csv)
@@ -226,12 +237,12 @@ def test_write_diagnostics_reporta_contexto_si_falla_restauracion(tmp_path, monk
 
 
 def test_cli_diagnostica_interim_y_restringe_salidas_al_proyecto(tmp_path, capsys):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 
-    exit_code = cli.main(["--interim-csv", str(interim_csv)])
+    exit_code = cli.main(["--source-csv", str(interim_csv)])
 
     captured = capsys.readouterr()
     assert exit_code == 0
@@ -240,7 +251,7 @@ def test_cli_diagnostica_interim_y_restringe_salidas_al_proyecto(tmp_path, capsy
     assert (tmp_path / "docs" / "diagnostico.md").exists()
 
     rejected = cli.main([
-        "--interim-csv",
+        "--source-csv",
         str(interim_csv),
         "--docs-file",
         str(tmp_path / "fuera" / "diagnostico.md"),
@@ -248,13 +259,13 @@ def test_cli_diagnostica_interim_y_restringe_salidas_al_proyecto(tmp_path, capsy
     assert rejected == 1
     assert "docs/diagnostico.md" in capsys.readouterr().err
 
-    rejected_interim = cli.main(["--interim-csv", str(tmp_path / "fuera" / "datos.csv")])
+    rejected_interim = cli.main(["--source-csv", str(tmp_path / "fuera" / "datos.csv")])
     assert rejected_interim == 1
-    assert "data/interim" in capsys.readouterr().err
+    assert "data/source" in capsys.readouterr().err
 
 
 def test_cli_reporta_fallo_de_restauracion_de_salidas_sin_traceback(tmp_path, capsys, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
@@ -264,7 +275,7 @@ def test_cli_reporta_fallo_de_restauracion_de_salidas_sin_traceback(tmp_path, ca
 
     monkeypatch.setattr(cli, "write_diagnostics", fail_write_diagnostics)
 
-    exit_code = cli.main(["--interim-csv", str(interim_csv)])
+    exit_code = cli.main(["--source-csv", str(interim_csv)])
 
     captured = capsys.readouterr()
     assert exit_code == 1

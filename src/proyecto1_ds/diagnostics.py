@@ -11,7 +11,7 @@ import re
 from typing import Any
 
 
-DEFAULT_INTERIM_CSV = Path("data/interim/establecimientos_diversificado_raw_unificado.csv")
+DEFAULT_SOURCE_CSV = Path("data/source/establecimientos_diversificado_mineduc.csv")
 DEFAULT_OUTPUT_DIR = Path("outputs/tablas")
 DEFAULT_DOCS_PATH = Path("docs/diagnostico.md")
 MISSING_MARKERS = {"", "n/a", "na", "null", "none", "-", ".", "sin dato", "----"}
@@ -22,7 +22,7 @@ DOMAIN_TOP_N = 20
 
 
 class DiagnosticCsvError(ValueError):
-    """Error esperado cuando el CSV intermedio no es tabularmente válido."""
+    """Error esperado cuando el CSV fuente no es tabularmente válido."""
 
 
 class DiagnosticOutputError(RuntimeError):
@@ -31,7 +31,7 @@ class DiagnosticOutputError(RuntimeError):
 
 @dataclass(frozen=True)
 class DiagnosticReport:
-    """Resultado tabular del diagnóstico sin modificar el CSV intermedio."""
+    """Resultado tabular del diagnóstico sin modificar el CSV fuente."""
 
     source_path: Path
     summary: dict[str, Any]
@@ -49,10 +49,10 @@ class DiagnosticOutputs:
     docs_path: Path
 
 
-def generate_diagnostics(interim_csv: Path | str = DEFAULT_INTERIM_CSV) -> DiagnosticReport:
-    """Calcula métricas requeridas sobre el CSV intermedio sin limpiarlo."""
+def generate_diagnostics(source_csv: Path | str = DEFAULT_SOURCE_CSV) -> DiagnosticReport:
+    """Calcula métricas requeridas sobre el CSV fuente sin limpiarlo."""
 
-    source_path = Path(interim_csv)
+    source_path = Path(source_csv)
     header, rows = _read_csv(source_path)
     duplicate_rows = _exact_duplicate_rows(rows, header)
     column_metrics = [_column_metric(column, rows) for column in header]
@@ -404,7 +404,7 @@ El flujo completo conserva la línea de procedencia `adquisición → manifest �
 
 1. Adquisición: `uv run python scripts/adquirir_datos.py --capture-html --department-code 01 --department-name GUATEMALA --fecha-extraccion 2026-07-14`.
 2. Manifest: `data/raw/manifest.json` registra fuente, cobertura, método, checksum y error de adquisición si aplica.
-3. Consolidación: `uv run python scripts/consolidar_crudos.py` regenera `data/interim/establecimientos_diversificado_raw_unificado.csv` sin limpieza.
+3. Consolidación: `uv run python scripts/consolidar_crudos.py` regenera `data/source/establecimientos_diversificado_mineduc.csv` sin limpieza.
 4. Diagnóstico: `uv run python scripts/diagnosticar_crudos.py` regenera estas tablas y este documento.
 
 El comando de adquisición mostrado es un ejemplo para un departamento. La adquisición preservada contiene 23 artefactos HTML departamentales en `data/raw/`; para recapturarla completa, repita el comando para cada código y nombre de departamento, o use los artefactos crudos ya preservados.

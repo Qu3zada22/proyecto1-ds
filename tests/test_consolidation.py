@@ -6,12 +6,21 @@ import shutil
 
 import pytest
 
-from proyecto1_ds.consolidation import ConsolidationError, consolidate_raw
+from proyecto1_ds.consolidation import DEFAULT_OUTPUT_PATH, ConsolidationError, consolidate_raw
 from proyecto1_ds.manifest import ManifestEntry, checksum_sha256, write_manifest
 
 
 FIXTURE_RAW = Path(__file__).resolve().parent / "fixtures" / "raw"
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "consolidar_crudos.py"
+CANONICAL_SOURCE = Path("data/source/establecimientos_diversificado_mineduc.csv")
+
+
+def test_default_y_cli_publican_solo_en_fuente_canonica(tmp_path):
+    cli = _load_cli_module()
+    cli.ROOT = tmp_path
+
+    assert DEFAULT_OUTPUT_PATH == CANONICAL_SOURCE
+    assert cli.build_parser().parse_args([]).output_file == tmp_path / CANONICAL_SOURCE
 
 
 def _entry(raw_dir: Path, filename: str, *, departamento: str | None, metodo: str = "manual") -> ManifestEntry:
@@ -40,7 +49,7 @@ def _read_rows(path: Path) -> tuple[list[str], list[dict[str, str]]]:
 
 def test_consolida_csv_compatibles_preservando_valores_y_procedencia(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     _copy_fixture(raw_dir, "establecimientos_compatible_escuintla.csv")
     manifest = [
@@ -73,7 +82,7 @@ def test_consolida_csv_compatibles_preservando_valores_y_procedencia(tmp_path):
 
 def test_reporta_esquema_incompatible_sin_generar_salida_parcial(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     _copy_fixture(raw_dir, "establecimientos_incompatible.csv")
     manifest = [
@@ -97,7 +106,7 @@ def test_reporta_esquema_incompatible_sin_generar_salida_parcial(tmp_path):
 def test_rechaza_csv_crudo_con_filas_ragged_sin_generar_salida(tmp_path, filename, content, expected):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     (raw_dir / filename).write_text(content, encoding="utf-8")
     manifest = [_entry(raw_dir, filename, departamento="Guatemala")]
 
@@ -109,7 +118,7 @@ def test_rechaza_csv_crudo_con_filas_ragged_sin_generar_salida(tmp_path, filenam
 
 def test_conserva_departamento_ambiguo_como_pendiente_para_diagnostico(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_departamento_ambiguo.csv")
 
     consolidate_raw(
@@ -133,7 +142,7 @@ def test_conserva_departamento_ambiguo_como_pendiente_para_diagnostico(tmp_path)
 def test_extrae_tabla_html_oficial_sin_limpiar_texto_de_celdas(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "mineduc_busca_establecimiento_diversificado_01.html"
     (raw_dir / html_name).write_text(
         """
@@ -167,7 +176,7 @@ def test_extrae_tabla_html_oficial_sin_limpiar_texto_de_celdas(tmp_path):
 def test_excluye_filas_html_estructurales_sin_datos_reales_preservando_valores_nbsp(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "mineduc_busca_establecimiento_diversificado_footer.html"
     (raw_dir / html_name).write_text(
         """
@@ -200,7 +209,7 @@ def test_excluye_filas_html_estructurales_sin_datos_reales_preservando_valores_n
 def test_html_sin_tabla_esperada_reporta_error_y_no_genera_salida(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "sin_tabla.html"
     (raw_dir / html_name).write_text("<html><body><table><tr><td>sin resultados</td></tr></table></body></html>", encoding="utf-8")
     manifest = [_entry(raw_dir, html_name, departamento="GUATEMALA", metodo="html-form")]
@@ -214,7 +223,7 @@ def test_html_sin_tabla_esperada_reporta_error_y_no_genera_salida(tmp_path):
 def test_html_truncado_con_fila_abierta_falla_sin_generar_salida(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "mineduc_busca_establecimiento_diversificado_truncado.html"
     (raw_dir / html_name).write_text(
         """
@@ -236,7 +245,7 @@ def test_html_truncado_con_fila_abierta_falla_sin_generar_salida(tmp_path):
 def test_html_con_encabezado_sin_filas_y_sin_marcador_oficial_falla_como_parcial(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "mineduc_busca_establecimiento_diversificado_solo_encabezado.html"
     (raw_dir / html_name).write_text(
         """
@@ -259,7 +268,7 @@ def test_html_con_encabezado_sin_filas_y_sin_marcador_oficial_falla_como_parcial
 def test_html_con_tabla_vacia_y_marcador_oficial_consolida_departamento_vacio(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
     raw_dir.mkdir(parents=True)
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     html_name = "mineduc_busca_establecimiento_diversificado_sin_resultados.html"
     (raw_dir / html_name).write_text(
         """
@@ -283,7 +292,7 @@ def test_html_con_tabla_vacia_y_marcador_oficial_consolida_departamento_vacio(tm
 
 def test_valida_checksum_del_manifest_antes_de_consolidar(tmp_path):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     manifest = [_entry(raw_dir, "establecimientos_compatible_guatemala.csv", departamento="Guatemala")]
     (raw_dir / "establecimientos_compatible_guatemala.csv").write_text(
@@ -299,7 +308,7 @@ def test_valida_checksum_del_manifest_antes_de_consolidar(tmp_path):
 
 def test_escritura_csv_es_atomica_y_preserva_salida_existente_si_falla(tmp_path, monkeypatch):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     output_path.parent.mkdir(parents=True)
     output_path.write_text("contenido,previo\nno,destruir\n", encoding="utf-8")
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
@@ -319,7 +328,7 @@ def test_escritura_csv_es_atomica_y_preserva_salida_existente_si_falla(tmp_path,
 
 def test_cli_consolida_desde_manifest_publico(tmp_path, capsys):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     write_manifest([_entry(raw_dir, "establecimientos_compatible_guatemala.csv", departamento="Guatemala")], raw_dir / "manifest.json")
     cli = _load_cli_module()
@@ -329,10 +338,10 @@ def test_cli_consolida_desde_manifest_publico(tmp_path, capsys):
 
     assert exit_code == 0
     assert output_path.exists()
-    assert "Dataset intermedio generado" in capsys.readouterr().out
+    assert "Fuente canónica generada" in capsys.readouterr().out
 
 
-def test_cli_rechaza_output_file_fuera_de_data_interim(tmp_path, capsys):
+def test_cli_rechaza_output_file_fuera_de_data_source(tmp_path, capsys):
     raw_dir = tmp_path / "data" / "raw"
     output_path = tmp_path / "fuera.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
@@ -344,12 +353,12 @@ def test_cli_rechaza_output_file_fuera_de_data_interim(tmp_path, capsys):
 
     assert exit_code == 1
     assert not output_path.exists()
-    assert "data/interim" in capsys.readouterr().err
+    assert "data/source" in capsys.readouterr().err
 
 
 def test_cli_rechaza_raw_dir_fuera_de_data_raw(tmp_path, capsys):
     raw_dir = tmp_path / "fuera" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     write_manifest([_entry(raw_dir, "establecimientos_compatible_guatemala.csv", departamento="Guatemala")], raw_dir / "manifest.json")
     cli = _load_cli_module()
@@ -364,7 +373,7 @@ def test_cli_rechaza_raw_dir_fuera_de_data_raw(tmp_path, capsys):
 
 def test_cli_rechaza_manifest_fuera_de_data_raw(tmp_path, capsys):
     raw_dir = tmp_path / "data" / "raw"
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     manifest_path = tmp_path / "manifest.json"
     _copy_fixture(raw_dir, "establecimientos_compatible_guatemala.csv")
     write_manifest([_entry(raw_dir, "establecimientos_compatible_guatemala.csv", departamento="Guatemala")], manifest_path)
@@ -383,7 +392,7 @@ def test_cli_reporta_manifest_json_invalido_sin_traceback(tmp_path, capsys):
     raw_dir.mkdir(parents=True)
     manifest_path = raw_dir / "manifest.json"
     manifest_path.write_text("{manifest inválido", encoding="utf-8")
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 
@@ -402,7 +411,7 @@ def test_cli_reporta_schema_de_manifest_invalido_sin_traceback(tmp_path, capsys)
     raw_dir.mkdir(parents=True)
     manifest_path = raw_dir / "manifest.json"
     manifest_path.write_text(json.dumps({"lotes": [{"archivo": "sin_campos.csv"}]}), encoding="utf-8")
-    output_path = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    output_path = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 

@@ -1,4 +1,4 @@
-"""Limpieza conservadora y trazable del CSV intermedio MINEDUC."""
+"""Limpieza conservadora y trazable del CSV fuente MINEDUC."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import stat
 from typing import Any, Callable, TextIO
 
 
-DEFAULT_INTERIM_CSV = Path("data/interim/establecimientos_diversificado_raw_unificado.csv")
+DEFAULT_SOURCE_CSV = Path("data/source/establecimientos_diversificado_mineduc.csv")
 DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.csv")
 DEFAULT_TABLES_DIR = Path("outputs/tablas")
 NBSP = "\xa0"
@@ -21,7 +21,7 @@ REPORT_FIELDS = ["metrica", "variable", "antes", "despues", "estado", "nota"]
 
 
 class CleaningCsvError(ValueError):
-    """Error esperado cuando el CSV intermedio no es tabularmente válido."""
+    """Error esperado cuando el CSV fuente no es tabularmente válido."""
 
 
 class CleaningOutputError(RuntimeError):
@@ -57,10 +57,10 @@ class _OutputWritePlan:
     writer: Callable[[TextIO], None]
 
 
-def clean_dataset(interim_csv: Path | str = DEFAULT_INTERIM_CSV) -> CleaningResult:
-    """Limpia el CSV intermedio con reglas determinísticas y conservadoras."""
+def clean_dataset(source_csv: Path | str = DEFAULT_SOURCE_CSV) -> CleaningResult:
+    """Limpia el CSV fuente con reglas determinísticas y conservadoras."""
 
-    source_path = Path(interim_csv)
+    source_path = Path(source_csv)
     original_header, raw_rows = _read_csv(source_path)
     normalized_rows = [_normalize_row(row, original_header) for row in raw_rows]
     header = list(original_header)

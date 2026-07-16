@@ -17,7 +17,7 @@ El dataset diagnosticado contiene 11,867 filas, 20 columnas y 0 duplicados exact
 - `outputs/tablas/problemas_potenciales.csv`: problemas potenciales por variable y conteos asociados.
 - `outputs/tablas/dominios_observados.csv`: valores frecuentes observados por variable.
 - `outputs/tablas/duplicados_exactos.csv`: evidencia de duplicados exactos reportados.
-- `data/interim/establecimientos_diversificado_raw_unificado.csv`: dataset crudo unificado observado por el diagnóstico; este plan no lo modifica.
+- `data/source/establecimientos_diversificado_mineduc.csv`: fuente canónica unificada observada por el diagnóstico; este plan no la modifica.
 
 ## Criterios de clasificación
 
@@ -94,5 +94,5 @@ Este documento excluye explícitamente:
 - Crear un CSV limpio.
 - Crear el Code Book final.
 - Crear el reporte comparativo antes/después.
-- Mutar `data/raw/`, `data/interim/`, `outputs/`, scripts o `docs/diagnostico.md`.
+- Mutar `data/raw/`, `data/source/`, `outputs/`, scripts o `docs/diagnostico.md`.
 - Afirmar que ya se limpió, deduplicó, normalizó o validó territorialmente el dataset.

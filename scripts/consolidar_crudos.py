@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI delgado para consolidar artefactos crudos en data/interim."""
+"""CLI delgado para consolidar artefactos crudos en data/source."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-file",
         type=Path,
-        default=ROOT / "data/interim/establecimientos_diversificado_raw_unificado.csv",
+        default=ROOT / "data/source/establecimientos_diversificado_mineduc.csv",
     )
     return parser
 
@@ -35,7 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     except ConsolidationError as exc:
         print(f"Error de consolidación: {exc}", file=sys.stderr)
         return 1
-    print(f"Dataset intermedio generado: {output_path}")
+    print(f"Fuente canónica generada: {output_path}")
     return 0
 
 
@@ -58,10 +58,10 @@ def _resolve_cli_manifest(manifest: Path | None) -> Path | None:
 
 
 def _resolve_cli_output_file(output_file: Path) -> Path:
-    interim_root = (ROOT / "data/interim").resolve()
+    source_root = (ROOT / "data/source").resolve()
     destination = output_file.resolve()
-    if interim_root != destination.parent and interim_root not in destination.parents:
-        raise ConsolidationError(f"--output-file debe estar dentro de data/interim: {output_file}")
+    if source_root != destination.parent and source_root not in destination.parents:
+        raise ConsolidationError(f"--output-file debe estar dentro de data/source: {output_file}")
     return destination
 
 

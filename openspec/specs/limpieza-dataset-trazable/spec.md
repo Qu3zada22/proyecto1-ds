@@ -2,41 +2,34 @@
 
 ## Propósito
 
-Definir la generación reproducible de un dataset limpio conservador desde el CSV intermedio vigente, con bitácora y reporte antes/después, sin mutar fuentes crudas, intermedias ni diagnósticos existentes.
+Definir la generación reproducible de un dataset limpio conservador desde la fuente canónica vigente, con bitácora y reporte antes/después, sin mutar fuentes crudas, canónicas ni diagnósticos existentes.
 
 ## Requisitos
 
-### Requisito: Generación de CSV limpio separado
+### Requirement: Generación de CSV limpio separado
 
-El sistema MUST generar `data/processed/establecimientos_diversificado_limpio.csv` usando como entrada primaria únicamente `data/interim/establecimientos_diversificado_raw_unificado.csv`. El CSV de Anggie MAY usarse solo como evidencia secundaria de validación, nunca como fuente primaria.
+El sistema MUST generar `data/processed/establecimientos_diversificado_limpio.csv` solo desde `data/source/establecimientos_diversificado_mineduc.csv`; alternativas MAY usarse como evidencia.
+(Anteriormente: entrada en `data/interim/`.)
 
-#### Escenario: limpieza desde intermedio vigente
+#### Scenario: limpieza canónica
+- DADO la fuente válida
+- CUANDO se limpia
+- ENTONCES produce la salida en `data/processed/`.
 
-- DADO que existe el CSV intermedio vigente
-- CUANDO se ejecuta la limpieza trazable
-- ENTONCES se produce el CSV limpio en `data/processed/`
-- Y conserva filas y columnas no eliminadas según reglas seguras.
+#### Scenario: entrada ausente o ilegible
+- DADO una fuente ausente o ilegible
+- CUANDO se limpia
+- ENTONCES no altera salidas y reporta la causa.
 
-#### Escenario: entrada primaria ausente
+#### Scenario: entrada malformada
+- DADO un CSV vacío, ragged o con encabezados duplicados
+- CUANDO se limpia
+- ENTONCES se rechaza sin alterar salidas.
 
-- DADO que el CSV intermedio no existe o no es legible
-- CUANDO se solicita la limpieza
-- ENTONCES no se genera dataset limpio parcial
-- Y se reporta la causa del fallo.
-
-#### Escenario: entrada vacía o malformada
-
-- DADO un CSV intermedio vacío, con encabezados duplicados o con filas ragged que no coinciden con la cantidad de encabezados
-- CUANDO se solicita la limpieza
-- ENTONCES el sistema MUST rechazar la entrada como malformada
-- Y no debe crear ni actualizar el CSV limpio, la bitácora ni el reporte antes/después de forma parcial.
-
-#### Escenario: entrada solo con encabezados
-
-- DADO un CSV intermedio válido que contiene encabezados pero cero filas de datos
-- CUANDO se ejecuta la limpieza trazable
-- ENTONCES se genera un CSV limpio solo con encabezados válidos
-- Y la bitácora y el reporte antes/después registran `filas=0` y conteos cero sin tratarlo como fallo.
+#### Scenario: solo encabezados
+- DADO un CSV válido sin filas
+- CUANDO se limpia
+- ENTONCES genera encabezados y conteos cero.
 
 ### Requisito: Reglas determinísticas conservadoras
 
@@ -107,20 +100,17 @@ El sistema MUST tratar el CSV limpio, la bitácora y el reporte antes/después c
 - ENTONCES los bytes del CSV limpio, la bitácora y el reporte antes/después MUST ser idénticos entre ejecuciones
 - Y la bitácora y el reporte no contienen filas duplicadas ni filas stale de una ejecución previa.
 
-### Requisito: Protección de fuentes y decisiones diferidas
+### Requirement: Protección de fuentes y decisiones diferidas
 
-El sistema MUST NOT mutar `data/raw/`, `data/interim/`, HTML fuente, `docs/diagnostico.md`, `docs/plan_limpieza.md` ni diagnósticos existentes. Duplicados parciales, validación territorial, teléfonos ambiguos y limpieza semántica libre MUST quedar diferidos o manuales.
+El sistema MUST NOT mutar crudos, manifest, `data/source/`, diagnósticos ni planes; decisiones ambiguas MUST permanecer manuales.
+(Anteriormente: protegía `data/interim/`.)
 
-#### Escenario: artefactos protegidos
+#### Scenario: artefactos protegidos
+- DADO fuentes y evidencia
+- CUANDO se limpia
+- ENTONCES conservan hashes y solo cambian salidas autorizadas.
 
-- DADO que existen fuentes crudas, intermedias y diagnósticos previos
-- CUANDO se ejecuta la limpieza trazable
-- ENTONCES esos artefactos permanecen sin cambios
-- Y solo se crean o actualizan las salidas limpias permitidas.
-
-#### Escenario: problema no determinístico
-
-- DADO un duplicado parcial, territorio no verificable, teléfono ambiguo o texto semántico dudoso
-- CUANDO se evalúa durante la limpieza
-- ENTONCES no se corrige automáticamente
-- Y queda marcado como diferido o manual en la evidencia.
+#### Scenario: decisión no determinística
+- DADO un caso ambiguo
+- CUANDO se evalúa
+- ENTONCES no se autocorrige y queda trazado.

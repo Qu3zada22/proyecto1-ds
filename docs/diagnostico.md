@@ -1,6 +1,6 @@
 # Diagnóstico de datos crudos MINEDUC
 
-Este diagnóstico fue generado por código sobre `data/interim/establecimientos_diversificado_raw_unificado.csv`.
+Este diagnóstico fue generado por código sobre `data/source/establecimientos_diversificado_mineduc.csv`.
 
 ## Resumen
 
@@ -16,7 +16,7 @@ El flujo completo conserva la línea de procedencia `adquisición → manifest �
 
 1. Adquisición: `uv run python scripts/adquirir_datos.py --capture-html --department-code 01 --department-name GUATEMALA --fecha-extraccion 2026-07-14`.
 2. Manifest: `data/raw/manifest.json` registra fuente, cobertura, método, checksum y error de adquisición si aplica.
-3. Consolidación: `uv run python scripts/consolidar_crudos.py` regenera `data/interim/establecimientos_diversificado_raw_unificado.csv` sin limpieza.
+3. Consolidación: `uv run python scripts/consolidar_crudos.py` regenera `data/source/establecimientos_diversificado_mineduc.csv` sin limpieza.
 4. Diagnóstico: `uv run python scripts/diagnosticar_crudos.py` regenera estas tablas y este documento.
 
 El comando de adquisición mostrado es un ejemplo para un departamento. La adquisición preservada contiene 23 artefactos HTML departamentales en `data/raw/`; para recapturarla completa, repita el comando para cada código y nombre de departamento, o use los artefactos crudos ya preservados.

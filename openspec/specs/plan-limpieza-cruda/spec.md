@@ -25,7 +25,7 @@ El sistema MUST producir `docs/plan_limpieza.md` como documento de planificació
 
 ### Requisito: Trazabilidad por variable y problema
 
-`docs/plan_limpieza.md` MUST incluir una tabla por variable o problema diagnosticado con: variable, problema, regla propuesta, justificación, riesgo, estado y evidencia. La evidencia MUST trazar a `docs/diagnostico.md`, `outputs/tablas/diagnostico_columnas.csv`, `outputs/tablas/problemas_potenciales.csv`, `outputs/tablas/dominios_observados.csv`, `outputs/tablas/duplicados_exactos.csv` o `data/interim/establecimientos_diversificado_raw_unificado.csv`.
+`docs/plan_limpieza.md` MUST incluir una tabla por variable o problema diagnosticado con: variable, problema, regla propuesta, justificación, riesgo, estado y evidencia. La evidencia MUST trazar a `docs/diagnostico.md`, `outputs/tablas/diagnostico_columnas.csv`, `outputs/tablas/problemas_potenciales.csv`, `outputs/tablas/dominios_observados.csv`, `outputs/tablas/duplicados_exactos.csv` o `data/source/establecimientos_diversificado_mineduc.csv`.
 
 #### Escenario: variable diagnosticada
 
@@ -58,7 +58,7 @@ El plan MUST separar reglas accionables de decisiones diferidas, manuales o depe
 
 ### Requisito: No ejecución de limpieza ni mutación de datos
 
-El plan MUST NOT modificar `data/raw/`, `data/interim/`, `outputs/`, scripts ni documentos diagnósticos. También MUST NOT afirmar que se limpió, deduplicó, normalizó, validó territorialmente o generó un dataset limpio.
+El plan MUST NOT modificar `data/raw/`, `data/source/`, `outputs/`, scripts ni documentos diagnósticos. También MUST NOT afirmar que se limpió, deduplicó, normalizó, validó territorialmente o generó un dataset limpio.
 
 #### Escenario: revisión de alcance
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI delgado para diagnosticar el CSV intermedio crudo."""
+"""CLI delgado para diagnosticar el CSV fuente canónico."""
 
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ class DiagnosticsCliError(RuntimeError):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Diagnostica el CSV intermedio crudo sin limpieza.")
+    parser = argparse.ArgumentParser(description="Diagnostica el CSV fuente canónico sin limpieza.")
     parser.add_argument(
-        "--interim-csv",
+        "--source-csv",
         type=Path,
-        default=ROOT / "data/interim/establecimientos_diversificado_raw_unificado.csv",
+        default=ROOT / "data/source/establecimientos_diversificado_mineduc.csv",
     )
     parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/tablas")
     parser.add_argument("--docs-file", type=Path, default=ROOT / "docs/diagnostico.md")
@@ -33,10 +33,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        interim_csv = _resolve_interim_csv(args.interim_csv)
+        source_csv = _resolve_source_csv(args.source_csv)
         output_dir = _resolve_output_dir(args.output_dir)
         docs_file = _resolve_docs_file(args.docs_file)
-        report = generate_diagnostics(interim_csv)
+        report = generate_diagnostics(source_csv)
         outputs = write_diagnostics(report, output_dir=output_dir, docs_path=docs_file)
     except (DiagnosticsCliError, DiagnosticCsvError, DiagnosticOutputError, OSError, csv.Error) as exc:
         print(f"Error de diagnóstico: {exc}", file=sys.stderr)
@@ -45,11 +45,11 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _resolve_interim_csv(interim_csv: Path) -> Path:
-    interim_root = (ROOT / "data/interim").resolve()
-    destination = interim_csv.resolve()
-    if destination != interim_root and interim_root not in destination.parents:
-        raise DiagnosticsCliError(f"--interim-csv debe estar dentro de data/interim: {interim_csv}")
+def _resolve_source_csv(source_csv: Path) -> Path:
+    source_root = (ROOT / "data/source").resolve()
+    destination = source_csv.resolve()
+    if destination != source_root and source_root not in destination.parents:
+        raise DiagnosticsCliError(f"--source-csv debe estar dentro de data/source: {source_csv}")
     return destination
 
 

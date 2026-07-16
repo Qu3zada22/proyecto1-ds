@@ -11,7 +11,7 @@ from tempfile import NamedTemporaryFile
 from .manifest import Manifest, ManifestEntry, read_manifest
 
 
-DEFAULT_OUTPUT_PATH = Path("data/interim/establecimientos_diversificado_raw_unificado.csv")
+DEFAULT_OUTPUT_PATH = Path("data/source/establecimientos_diversificado_mineduc.csv")
 RESULT_TABLE_ID = "_ctl0_ContentPlaceHolder1_dgResultado"
 PROVENANCE_COLUMNS = ["archivo_origen", "departamento_origen"]
 NO_RESULTS_MARKERS = (
@@ -34,7 +34,7 @@ def consolidate_raw(
     manifest_path: Path | str | None = None,
     output_path: Path | str = DEFAULT_OUTPUT_PATH,
 ) -> Path:
-    """Une artefactos crudos compatibles en un CSV intermedio.
+    """Une artefactos crudos compatibles en el CSV fuente canónico.
 
     La función solo hace transformación estructural: lee CSV o tablas HTML oficiales,
     alinea columnas compatibles por encabezado normalizado para comparación y agrega

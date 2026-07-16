@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from proyecto1_ds import cleaning
-from proyecto1_ds.cleaning import CleaningCsvError, CleaningOutputError, clean_dataset, write_cleaning_outputs
+from proyecto1_ds.cleaning import DEFAULT_SOURCE_CSV, CleaningCsvError, CleaningOutputError, clean_dataset, write_cleaning_outputs
+
+
+def test_default_de_limpieza_usa_fuente_canonica():
+    assert DEFAULT_SOURCE_CSV == Path("data/source/establecimientos_diversificado_mineduc.csv")
 
 
 def _write_csv(path: Path, header: list[str], rows: list[list[str]]) -> None:
@@ -22,7 +26,7 @@ def _read_table(path: Path) -> list[dict[str, str]]:
 
 
 def test_limpia_nbsp_ausencias_y_preserva_identificadores_como_texto(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(
         interim_csv,
         ["CODIGO", "DISTRITO", "TELEFONO", "ESTABLECIMIENTO", "DIRECTOR", "archivo_origen", "\xa0"],
@@ -66,7 +70,7 @@ def test_limpia_nbsp_ausencias_y_preserva_identificadores_como_texto(tmp_path):
 
 
 def test_conserva_columna_nbsp_con_contenido_y_reporta_decision_no_segura(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "\xa0"], [["001", "valor observado"], ["002", ""]])
 
     result = clean_dataset(interim_csv)
@@ -109,7 +113,7 @@ def test_rechaza_csv_malformado_y_permite_csv_solo_con_encabezados(tmp_path):
 
 
 def test_write_cleaning_outputs_restauracion_atomica_sin_parciales(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -144,7 +148,7 @@ def test_write_cleaning_outputs_restauracion_atomica_sin_parciales(tmp_path, mon
 
 
 def test_write_cleaning_outputs_limpia_temporal_si_writer_falla_durante_escritura(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -170,7 +174,7 @@ def test_write_cleaning_outputs_limpia_temporal_si_writer_falla_durante_escritur
 
 
 def test_write_cleaning_outputs_ignora_temporal_predecible_preexistente_como_symlink(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -192,7 +196,7 @@ def test_write_cleaning_outputs_ignora_temporal_predecible_preexistente_como_sym
 
 
 def test_write_cleaning_outputs_rechaza_temporal_intercambiado_por_symlink_sin_redirigir(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -229,7 +233,7 @@ def test_write_cleaning_outputs_restaura_si_temporal_se_intercambia_por_director
     tmp_path,
     monkeypatch,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
     tables_dir = tmp_path / "outputs" / "tablas"
@@ -278,7 +282,7 @@ def test_write_cleaning_outputs_limpia_directorio_temporal_intercambiado_antes_d
     tmp_path,
     monkeypatch,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -313,7 +317,7 @@ def test_write_cleaning_outputs_revalida_destino_final_antes_de_backup_si_se_int
     tmp_path,
     monkeypatch,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
     tables_dir = tmp_path / "outputs" / "tablas"
@@ -352,7 +356,7 @@ def test_write_cleaning_outputs_no_borra_directorio_destino_creado_antes_de_repl
     tmp_path,
     monkeypatch,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -382,7 +386,7 @@ def test_write_cleaning_outputs_no_borra_directorio_destino_creado_antes_de_repl
 
 
 def test_write_cleaning_outputs_rechaza_parent_intercambiado_por_symlink_antes_de_abrirlo(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -412,7 +416,7 @@ def test_write_cleaning_outputs_rechaza_parent_intercambiado_por_symlink_antes_d
 
 
 def test_write_cleaning_outputs_rechaza_data_processed_symlink_a_data_raw_sin_mutar_raw(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     raw_dir = tmp_path / "data" / "raw"
@@ -440,7 +444,7 @@ def test_write_cleaning_outputs_rechaza_ancestro_data_intercambiado_por_symlink_
     tmp_path,
     monkeypatch,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -473,7 +477,7 @@ def test_write_cleaning_outputs_rechaza_outputs_o_tablas_symlink_sin_escribir_fu
     tmp_path,
     symlink_case,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -500,7 +504,7 @@ def test_write_cleaning_outputs_rechaza_outputs_o_tablas_symlink_sin_escribir_fu
 
 
 def test_write_cleaning_outputs_rechaza_rutas_fuera_de_raices_permitidas_con_project_root(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     allowed_clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -543,7 +547,7 @@ def test_write_cleaning_outputs_rechaza_rutas_fuera_de_raices_permitidas_con_pro
 
 
 def test_write_cleaning_outputs_rechaza_data_processed_como_csv_limpio_antes_de_escribir(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
 
@@ -565,7 +569,7 @@ def test_write_cleaning_outputs_rechaza_data_processed_como_csv_limpio_antes_de_
 
 
 def test_write_cleaning_outputs_rechaza_directorio_existente_como_csv_limpio_sin_mutarlo(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     output_dir = tmp_path / "data" / "processed" / "salida_existente"
@@ -599,7 +603,7 @@ def test_write_cleaning_outputs_rechaza_directorio_existente_como_tabla_fija_sin
     monkeypatch,
     table_filename,
 ):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -625,7 +629,7 @@ def test_write_cleaning_outputs_rechaza_directorio_existente_como_tabla_fija_sin
 
 
 def test_write_cleaning_outputs_rechaza_rutas_personalizadas_sin_project_root_antes_de_escribir(tmp_path, monkeypatch):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
@@ -654,7 +658,7 @@ def test_write_cleaning_outputs_rechaza_rutas_personalizadas_sin_project_root_an
 
 
 def test_write_cleaning_outputs_defaults_se_resuelven_bajo_raices_seguras(monkeypatch, tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "Ana", ""]])
     result = clean_dataset(interim_csv)
     planned_destinations: list[Path] = []
@@ -677,7 +681,7 @@ def test_write_cleaning_outputs_defaults_se_resuelven_bajo_raices_seguras(monkey
 
 
 def test_salidas_son_byte_por_byte_deterministicas_e_idempotentes(tmp_path):
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", " SIN DATO ", ""]])
     clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
     tables_dir = tmp_path / "outputs" / "tablas"
@@ -702,7 +706,7 @@ def test_limpieza_no_muta_fuentes_crudas_intermedias_html_ni_documentos(tmp_path
     raw_file = tmp_path / "data" / "raw" / "guatemala.html"
     raw_file.parent.mkdir(parents=True, exist_ok=True)
     raw_file.write_text("<html>raw</html>", encoding="utf-8")
-    interim_csv = tmp_path / "data" / "interim" / "establecimientos_diversificado_raw_unificado.csv"
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_csv(interim_csv, ["CODIGO", "DIRECTOR", "\xa0"], [["001", "SIN DATO", ""]])
     diagnostics_doc = tmp_path / "docs" / "diagnostico.md"
     cleaning_plan = tmp_path / "docs" / "plan_limpieza.md"

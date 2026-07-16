@@ -1,10 +1,9 @@
 # Proyecto 1 — Calidad de datos de establecimientos educativos
 
-Proceso reproducible para obtener, consolidar, diagnosticar y limpiar los establecimientos educativos de nivel **Diversificado** publicados por el Ministerio de Educación de Guatemala (MINEDUC).
 
 > **Repositorio:** [github.com/Qu3zada22/proyecto1-ds](https://github.com/Qu3zada22/proyecto1-ds)
 >
-> **Estado:** avance parcial verificable
+> **Estado:** avance parcial
 >
 > **Fecha de corte:** 16 de julio de 2026
 

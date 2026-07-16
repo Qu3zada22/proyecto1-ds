@@ -30,7 +30,7 @@ Chain strategy: stacked-to-main
 - [x] 1.2 Agregar RED de CSV vacío, header-only, headers duplicados y filas ragged.
 - [x] 1.3 Agregar RED de atomicidad multi-salida con fallo inyectado, restauración y cero parciales.
 - [x] 1.4 Agregar RED de dos corridas byte-for-byte idénticas para CSV, bitácora y reporte.
-- [ ] 1.5 Crear `tests/test_cleaning_cli.py` para CLI/API, exit `0/1`, stderr sin traceback y guards.
+- [x] 1.5 Crear `tests/test_cleaning_cli.py` para CLI/API, exit `0/1`, stderr sin traceback y guards.
 - [x] 1.6 Agregar RED de no mutación para `data/raw/`, `data/interim/`, HTML fuente y diagnósticos.
 
 ## Fase 2: GREEN — módulo core
@@ -43,12 +43,12 @@ Chain strategy: stacked-to-main
 
 ## Fase 3: GREEN — CLI e integración
 
-- [ ] 3.1 Crear `scripts/limpiar_dataset.py` con `ROOT`, `main()->int`, defaults y errores esperados.
-- [ ] 3.2 Guardar desde CLI solo en `data/processed/` y `outputs/tablas/`; leer solo `data/interim/`.
-- [ ] 3.3 Exportar en `src/proyecto1_ds/__init__.py` solo si el API público lo exige.
+- [x] 3.1 Crear `scripts/limpiar_dataset.py` con `ROOT`, `main()->int`, defaults y errores esperados.
+- [x] 3.2 Guardar desde CLI solo en `data/processed/` y `outputs/tablas/`; leer solo `data/interim/`.
+- [x] 3.3 Exportar en `src/proyecto1_ds/__init__.py` solo si el API público lo exige; no requerido porque el CLI importa desde `proyecto1_ds.cleaning`.
 
 ## Fase 4: REFACTOR, salidas y verificación
 
-- [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py` y `diagnostics.py` después de PR1: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
+- [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py`, `diagnostics.py` y guards tempranos del CLI en PR3/refactor/final cleanup: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
 - [ ] 4.2 Ejecutar CLI para generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
 - [ ] 4.3 Ejecutar `uv run pytest` y verificar idempotencia, atomicidad, edges, exit codes y no mutación.

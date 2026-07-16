@@ -2,10 +2,11 @@
 
 ## Slice actual
 
-- PR: 1 / stacked-to-main.
-- Alcance: librería core de limpieza + pruebas unitarias.
-- Fuera de alcance en este slice: CLI `scripts/limpiar_dataset.py`, generación de salidas reales en `data/processed/` y `outputs/tablas/`, mutación de fuentes `data/raw/`, `data/interim/`, HTML, diagnósticos o plan.
-- Nota de consistencia: el forecast de `tasks.md` fue corregido para reflejar `stacked-to-main`, estrategia elegida por el usuario.
+- PR: 2 / stacked-to-main.
+- Alcance: CLI de limpieza, exit codes, guards de rutas y pruebas CLI.
+- Base declarada: `main` después del PR1 `6dab5c4 feat: add core cleaning engine`.
+- Fuera de alcance en este slice: generación de salidas reales desde datos del proyecto, tarea 4.2, mutación de `data/raw/`, `data/interim/`, `outputs/`, HTML fuente o documentos.
+- Nota de consistencia: se mantuvo la estrategia `auto-chain` con `stacked-to-main` y presupuesto de revisión de 400 líneas.
 
 ## Tareas completadas
 
@@ -13,13 +14,28 @@
 - [x] 1.2 Agregar RED de CSV vacío, header-only, headers duplicados y filas ragged.
 - [x] 1.3 Agregar RED de atomicidad multi-salida con fallo inyectado, restauración y cero parciales.
 - [x] 1.4 Agregar RED de dos corridas byte-for-byte idénticas para CSV, bitácora y reporte.
+- [x] 1.5 Crear `tests/test_cleaning_cli.py` para CLI/API, exit `0/1`, stderr sin traceback y guards.
 - [x] 1.6 Agregar RED de no mutación para `data/raw/`, `data/interim/`, HTML fuente y diagnósticos.
 - [x] 2.1 Crear `src/proyecto1_ds/cleaning.py` con excepciones, `clean_dataset()` y CSV estricto.
 - [x] 2.2 Normalizar NBSP/espacios y ausencias inequívocas, preservando texto.
 - [x] 2.3 Eliminar `<NBSP>` solo vacía; con contenido, reportar no seguro.
 - [x] 2.4 Construir bitácora/reporte estables, header-only con `filas=0` y decisiones diferidas.
 - [x] 2.5 Implementar `write_cleaning_outputs()` con temporales, backups, restauración y limpieza de parciales.
+- [x] 3.1 Crear `scripts/limpiar_dataset.py` con `ROOT`, `main()->int`, defaults y errores esperados.
+- [x] 3.2 Guardar desde CLI solo en `data/processed/` y `outputs/tablas/`; leer solo `data/interim/`.
+- [x] 3.3 Exportar en `src/proyecto1_ds/__init__.py` solo si el API público lo exige; no requerido porque el CLI importa desde `proyecto1_ds.cleaning`.
 - [x] Remediación PR1: exigir `project_root` para cualquier ruta personalizada de `write_cleaning_outputs()` y validar antes de `mkdir`/escritura.
+- [x] Remediación PR2 blocker: rechazar `--output-file data/processed`, directorios existentes como CSV limpio y nombres sin sufijo `.csv` antes de crear directorios o ejecutar escritura atómica.
+- [x] Remediación PR2 blocker: rechazar directorios existentes en `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv` antes de `mkdir` o escritura atómica.
+- [x] Remediación PR2 warning: reemplazar temporales predecibles `.archivo.<pid>.tmp` por temporales únicos creados con `os.open(..., O_CREAT|O_EXCL, dir_fd=...)` en el directorio destino confiable.
+- [x] Remediación PR2 security: eliminar ventana TOCTOU de temporales manteniendo el descriptor seguro abierto para el writer y rechazando swaps antes del reemplazo.
+- [x] Remediación final PR2 critical: revalidar el temporal inmediatamente antes de `replace()` y restaurar salidas si el temporal se intercambia por un directorio durante el commit.
+- [x] Remediación final PR2 warning: capturar errores esperados de `argparse` en `main()` para devolver exit `1` con usage/error en stderr y sin traceback.
+- [x] Remediación final PR2 readability: hacer explícita la expectativa del test de temporal intercambiado por symlink, sin `except (...): pass` ambiguo.
+- [x] Remediación final PR2 TOCTOU: no enmascarar `CleaningOutputError` si un temporal se intercambia por directorio antes de validación y limpiar el directorio temporal vacío cuando sea posible.
+- [x] Remediación final PR2 TOCTOU: revalidar el destino final inmediatamente antes del backup para rechazar directorios intercambiados sin moverlos a backup ni escribir CSV final.
+- [x] Remediación enfocada PR2 atomic writer: anclar temporales, backups, reemplazos y cleanup a file descriptors de directorios padre confiables con `dir_fd` y `O_NOFOLLOW`.
+- [x] Remediación final PR2 hardening: reemplazar validación con `Path.resolve()` por validación léxica bajo `project_root` y crear/abrir ancestros con traversal seguro `dir_fd` + `O_NOFOLLOW`, rechazando symlinks en `data/processed`, `data`, `outputs` y `outputs/tablas` antes de escribir.
 
 ## TDD Cycle Evidence
 
@@ -34,55 +50,126 @@
 | Remediación PR1: temporal de writer fallido | `tests/test_cleaning.py` | Unit | ✅ 6/6 baseline | ✅ Test agregado falla con `.reporte_calidad_antes_despues.csv.*.tmp` residual | ✅ `tests/test_cleaning.py` pasó con 7/7 | ✅ Falla durante escritura de temp antes de registro, además de fallo durante replace existente | ✅ `_report_row` usa argumentos keyword-only y `tasks.md` concreta follow-up de duplicación |
 | Remediación PR1: guard de rutas de salida | `tests/test_cleaning.py` | Unit | ✅ 7/7 baseline | ✅ Test agregado falla con `TypeError: unexpected keyword argument 'project_root'` | ✅ `tests/test_cleaning.py` pasó con 9/9 | ✅ Rechaza traversal fuera de `data/processed/`, rechaza tablas fuera de `outputs/tablas/`, acepta rutas válidas bajo `project_root` y resuelve defaults bajo la raíz del repo | ✅ Validación de raíces extraída antes de crear directorios/escribir salidas |
 | Remediación PR1: rutas personalizadas requieren `project_root` | `tests/test_cleaning.py` | Unit | ✅ 9/9 baseline | ✅ Test agregado falla porque se ejecuta `mkdir` para rutas personalizadas sin `project_root` | ✅ `tests/test_cleaning.py` pasó con 10/10 | ✅ Cubre ruta CSV personalizada, directorio de tablas personalizado y ambas rutas personalizadas sin `project_root`; conserva rechazo con `project_root` fuera de raíces permitidas | ✅ `_output_guard_root()` ahora siempre devuelve raíz validable o lanza `CleaningOutputError` antes de crear directorios/escribir |
+| 1.5 | `tests/test_cleaning_cli.py` | Unit | N/A (new) | ✅ 4 tests CLI fallaron por `FileNotFoundError` de `scripts/limpiar_dataset.py` inexistente | ✅ `tests/test_cleaning_cli.py` pasó con 4/4 | ✅ Cubre éxito, entrada ausente, guards de entrada/salidas y error de escritura | ✅ Helper de carga por `importlib.util` alineado con CLIs existentes |
+| 3.1 | `tests/test_cleaning_cli.py` | Unit | N/A (new script) | ✅ Tests exigieron `ROOT`, `main()->int`, defaults y stderr sin traceback antes del script | ✅ `tests/test_cleaning_cli.py` pasó con 4/4 | ✅ Exit 0 exitoso y exit 1 para entrada/escritura | ✅ CLI delgado delega en `clean_dataset()`/`write_cleaning_outputs()` |
+| 3.2 | `tests/test_cleaning_cli.py` | Unit | N/A (new script) | ✅ Test de guards rechazó rutas fuera de `data/interim`, `data/processed` y `outputs/tablas` | ✅ `tests/test_cleaning_cli.py` pasó con 4/4 | ✅ Rechazo independiente para entrada, CSV limpio y tablas | ✅ Validadores `_resolve_*` pequeños y explícitos |
+| 3.3 | N/A | Structural | ✅ `src/proyecto1_ds/__init__.py` no se modificó | ✅ Evaluación del contrato público antes de tocar `__init__.py` | ✅ No se requiere export adicional: el CLI usa `proyecto1_ds.cleaning` | ➖ Estructural sin nueva salida | ➖ Sin cambio necesario |
+| Remediación PR2 blocker: `--output-file` directorio | `tests/test_cleaning_cli.py`, `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning_cli.py` baseline 4/4 | ✅ Tests agregados fallaron: CLI aceptaba `data/processed` cuando no existía y reemplazaba `data/processed` existente; core llegaba a escritura atómica con `clean_csv_path` directorio | ✅ `tests/test_cleaning_cli.py` pasó con 7/7 y `tests/test_cleaning.py` pasó con 12/12 | ✅ Cubre raíz `data/processed` inexistente, raíz existente, directorio existente dentro de `data/processed` y archivo válido `data/processed/*.csv` | ✅ Validación de archivo CSV extraída en core y duplicada como guard temprano del CLI para fallar antes de `mkdir`/writer |
+| Remediación PR2 blocker: tablas fijas como directorio | `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 19/19 | ✅ Tests agregados fallaron con 2 failed/12 passed porque el core llegaba a `_write_outputs_atomically()` si `bitacora_limpieza.csv` o `reporte_calidad_antes_despues.csv` eran directorios | ✅ `tests/test_cleaning.py` pasó con 14/14 y `tests/test_cleaning.py tests/test_cleaning_cli.py` pasó con 21/21 | ✅ Parametrizado cubre ambas tablas fijas existentes como directorio, preserva marcador, sin backup/tmp y sin crear `data/processed`; pruebas existentes conservan `outputs/tablas/*.csv` válido | ✅ Helper común `_require_output_csv_file()` valida CSV limpio, bitácora y reporte antes de cualquier `mkdir`; CLI documenta su guard como UX temprano y core autoritativo |
+| Remediación PR2 warning: temporales predecibles/symlink | `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning.py` baseline 14/14 | ✅ Test agregado falló: un symlink preexistente `.establecimientos_diversificado_limpio.csv.<pid>.tmp` redirigía escritura a una ruta externa | ✅ `tests/test_cleaning.py -k symlink` pasó y `tests/test_cleaning.py` pasó con 15/15 | ✅ Conserva pruebas existentes de rollback/cleanup de temporales y agrega caso con symlink predecible fuera de raíces permitidas | ✅ Se reemplazó el patrón predecible por temporales con nombre aleatorio creados con `os.open(..., O_CREAT|O_EXCL, dir_fd=...)` en el directorio destino confiable |
+| Remediación PR2 security: TOCTOU close/reopen de temporal | `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning.py` baseline 15/15 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k intercambiado` falló: el writer reabrió el path temporal intercambiado por symlink y sobrescribió el target externo | ✅ Test focal pasó; `tests/test_cleaning.py` pasó con 16/16; suite completa pasó con 86/86 | ✅ Simula swap inmediatamente después de crear el temporal y antes del writer; target externo queda intacto, el CSV final no queda como symlink y no quedan `.tmp` | ✅ Writer ahora recibe `TextIO` seguro desde `os.fdopen(fd, ...)`; se valida `st_dev/st_ino` del temporal antes de `replace()` para fallar seguro si el path fue intercambiado |
+| Remediación final PR2 critical: temporal reemplazado por directorio antes de `replace()` | `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 23/23 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_antes_de_replace or intercambiado_por_symlink'` falló: se levantaba error de restauración y el destino podía quedar como directorio | ✅ Test focal pasó; `tests/test_cleaning.py tests/test_cleaning_cli.py` pasó con 25/25; suite completa pasó con 88/88 | ✅ Cubre directorio intercambiado antes del replace con salidas previas restauradas y mantiene el caso symlink explícito | ✅ `_write_outputs_atomically()` revalida justo antes de replace y `_restore_outputs()` remueve destinos inseguros vacíos antes de restaurar backups |
+| Remediación final PR2 warning: argumentos inválidos del CLI | `tests/test_cleaning_cli.py` | Unit | ✅ `tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 23/23 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py -k argumento_desconocido` falló con `SystemExit: 2` | ✅ Test focal pasó; `tests/test_cleaning.py tests/test_cleaning_cli.py` pasó con 25/25; suite completa pasó con 88/88 | ✅ Cubre argumento desconocido y argumento que requiere valor; ambos devuelven `1`, usage/error en stderr y sin traceback | ✅ `main()` captura `SystemExit` de `argparse`, preservando `--help` como `0` y mapeando errores a `1` |
+| Remediación final PR2 readability: test de symlink/temp explícito | `tests/test_cleaning.py` | Unit | ✅ `tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 23/23 | ✅ Se reemplazó el patrón ambiguo `except (CleaningOutputError, OSError): pass` por una expectativa explícita de `CleaningOutputError` | ✅ Test focal pasó junto con la regresión de directorio | ✅ La prueba ahora diferencia claramente fallo seguro esperado de éxito accidental | ✅ Assertions de seguridad permanecen después del error controlado |
+| Remediación final PR2 TOCTOU: temporal convertido en directorio antes de validación | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 25/25 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup'` falló con `IsADirectoryError`, enmascarando el `CleaningOutputError` primario | ✅ Test focal pasó; `tests/test_cleaning.py` pasó con 19/19 | ✅ Cubre directorio temporal vacío intercambiado antes de `_require_same_temporary_file()` y conserva regresiones previas de symlink/directorio antes de replace | ✅ `_safe_unlink()` ahora remueve directorios vacíos sin enmascarar el error primario |
+| Remediación final PR2 TOCTOU: destino final convertido en directorio antes de backup | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 25/25 | ✅ El test RED falló con `IsADirectoryError` al mover el directorio a `.backup` y escribir el CSV final en la ruta original | ✅ Test focal pasó; `tests/test_cleaning.py` pasó con 19/19 | ✅ Cubre swap del CSV limpio final a directorio con marcador inmediatamente antes de backup; exige no moverlo a backup, no escribir CSV final y no dejar temporales/backups | ✅ `_write_outputs_atomically()` revalida cada destino final como CSV no-directorio justo después de calcular backup y antes de `final_path.replace(backup_path)` |
+| Remediación enfocada PR2 atomic writer con `dir_fd` | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` baseline 19/19 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'symlink or directorio_antes_de_replace or directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup or parent_intercambiado'` falló con 4 failed/6 selected: temporales y parent swap no estaban anclados a fd y el destino final podía moverse a backup tras revalidación | ✅ Focal pasó con 6/6; `tests/test_cleaning.py` pasó con 20/20; `tests/test_cleaning_cli.py` pasó con 8/8; suite completa pasó con 91/91 | ✅ Cubre symlink predecible, swap de temporal a symlink, swap de temporal a directorio, swap de destino final a directorio después de revalidación y parent directory convertido en symlink antes de abrirlo | ✅ `_write_outputs_atomically()` abre padres con `os.open(... O_DIRECTORY|O_NOFOLLOW)`, crea temporales con `os.open(... O_CREAT|O_EXCL, dir_fd=...)`, escribe por fd abierto y usa `os.replace`/`os.unlink` relativos al fd |
+| Remediación final PR2 hardening de validación/traversal | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` baseline 20/20 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'data_processed_symlink or ancestro_data_intercambiado or outputs_o_tablas_symlink'` falló con 4/4: `Path.resolve()` colapsaba raíces permitidas hacia `data/raw`/afuera y el `mkdir`/open por path seguía ancestros symlink | ✅ Focal pasó con 6/6 tras actualizar parent/defaults; `tests/test_cleaning.py` pasó con 24/24; `tests/test_cleaning_cli.py` pasó con 8/8; suite completa pasó con 95/95 | ✅ Cubre `data/processed -> data/raw`, `data` reemplazado por symlink antes de crear dirs, `outputs -> outside` y `outputs/tablas -> data/raw` sin mutar targets protegidos | ✅ Validación de raíces ahora es léxica; preparación de padres abre `project_root` confiable y recorre/crea cada componente con `dir_fd`, `O_DIRECTORY` y `O_NOFOLLOW`; el writer consume esos fd confiables |
 
 ## Tests ejecutados
 
-- RED: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → falla esperada por `ModuleNotFoundError: No module named 'proyecto1_ds.cleaning'`.
-- GREEN: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 6 passed.
-- Verificación de slice: `/home/jonialen/.local/bin/uv run pytest` → 69 passed.
-- Baseline remediación: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 6 passed.
-- RED remediación: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 1 failed, 6 passed; quedó un `.tmp` de reporte cuando el writer falló después de crearlo y antes de registrarlo para cleanup.
-- GREEN remediación: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 7 passed.
-- Verificación remediación: `/home/jonialen/.local/bin/uv run pytest` → 70 passed.
-- Baseline guard de rutas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 7 passed.
-- RED guard de rutas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 1 failed, 7 passed; `write_cleaning_outputs()` aún no aceptaba `project_root`.
-- GREEN guard de rutas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 9 passed.
-- Verificación guard de rutas: `/home/jonialen/.local/bin/uv run pytest` → 72 passed.
-- Baseline remediación rutas personalizadas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 9 passed.
-- RED remediación rutas personalizadas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 1 failed, 9 passed; el flujo intentaba `mkdir` cuando había rutas personalizadas sin `project_root`.
-- GREEN remediación rutas personalizadas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 10 passed.
-- Verificación remediación rutas personalizadas: `/home/jonialen/.local/bin/uv run pytest` → 73 passed.
+- Histórico PR1 core: RED inicial de `tests/test_cleaning.py` falló por `ModuleNotFoundError`; GREEN core pasó con 6/6; verificación del slice pasó con 69 tests.
+- Histórico remediaciones PR1: baseline/RED/GREEN de temporal residual, guard de rutas y rutas personalizadas sin `project_root`; resultado final previo: `tests/test_cleaning.py` 10/10 y suite completa 73 passed.
+- RED PR2: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 4 failed; todos por `FileNotFoundError: scripts/limpiar_dataset.py` inexistente.
+- GREEN PR2: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 4 passed.
+- Verificación PR2: `/home/jonialen/.local/bin/uv run pytest` → 77 passed.
 - Verificación de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- RED remediación PR2 blocker: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 2 failed, 5 passed; confirmó aceptación/reemplazo de `data/processed`. `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 2 failed, 10 passed; confirmó que el core alcanzaba la escritura atómica con `clean_csv_path` directorio.
+- GREEN remediación PR2 blocker: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 7 passed; `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 12 passed.
+- Verificación final remediación PR2 blocker: `/home/jonialen/.local/bin/uv run pytest` → 82 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación PR2 tablas fijas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` → 19 passed.
+- RED remediación PR2 tablas fijas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 2 failed, 12 passed; confirmó que el core llegaba a escritura atómica si `outputs/tablas/bitacora_limpieza.csv` o `outputs/tablas/reporte_calidad_antes_despues.csv` eran directorios.
+- GREEN remediación PR2 tablas fijas: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 14 passed; `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` → 21 passed.
+- Verificación final remediación PR2 tablas fijas: `/home/jonialen/.local/bin/uv run pytest` → 84 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación PR2 temporales predecibles: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 14 passed.
+- RED remediación PR2 temporales predecibles: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k symlink` → 1 failed, 14 deselected; confirmó que el patrón `.archivo.<pid>.tmp` seguía un symlink preexistente y sobrescribía una ruta fuera de las raíces permitidas.
+- GREEN remediación PR2 temporales predecibles: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k symlink` → 1 passed, 14 deselected; `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 15 passed.
+- Verificación CLI afectada por core: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 7 passed.
+- Verificación final remediación PR2 temporales predecibles: `/home/jonialen/.local/bin/uv run pytest` → 85 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- RED remediación PR2 TOCTOU close/reopen: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k intercambiado` → 1 failed, 15 deselected; confirmó overwrite del target externo cuando el temp de `mkstemp()` era intercambiado por symlink antes del writer.
+- GREEN remediación PR2 TOCTOU close/reopen: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k intercambiado` → 1 passed, 15 deselected.
+- Verificación core remediación PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 16 passed.
+- Verificación CLI afectada por core: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 7 passed.
+- Verificación final remediación PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest` → 86 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación final PR2: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` → 23 passed; `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- RED remediación final PR2 critical: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_antes_de_replace or intercambiado_por_symlink'` → 1 failed, 1 passed, 15 deselected; confirmó restauración incompleta si un temporal era intercambiado por directorio antes de `replace()`.
+- RED remediación final PR2 CLI: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py -k argumento_desconocido` → 1 failed, 7 deselected; confirmó `SystemExit: 2` por `parse_args()` fuera del manejo esperado.
+- GREEN remediación final PR2 focal: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_antes_de_replace or intercambiado_por_symlink'` → 2 passed, 15 deselected; `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py -k argumento_desconocido` → 1 passed, 7 deselected.
+- Verificación solicitada remediación final PR2: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` → 25 passed.
+- Verificación final remediación final PR2: `/home/jonialen/.local/bin/uv run pytest` → 88 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación final PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` → 25 passed; `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- RED remediación final PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup'` → 2 failed, 17 deselected; confirmó `IsADirectoryError` en cleanup de temporal/directorio backup y el riesgo de mover un destino final directorio a backup.
+- GREEN remediación final PR2 TOCTOU focal: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup'` → 2 passed, 17 deselected.
+- Verificación core remediación final PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 19 passed.
+- Verificación CLI remediación final PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 8 passed.
+- Verificación final remediación final PR2 TOCTOU: `/home/jonialen/.local/bin/uv run pytest` → 90 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación enfocada PR2 atomic writer: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 19 passed.
+- RED remediación enfocada PR2 atomic writer: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'symlink or directorio_antes_de_replace or directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup or parent_intercambiado'` → 4 failed, 2 passed, 14 deselected; confirmó que los tests nuevos no pasaban con path-based replace/temp handling.
+- GREEN focal remediación enfocada PR2 atomic writer: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'symlink or directorio_antes_de_replace or directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup or parent_intercambiado'` → 6 passed, 14 deselected.
+- Verificación core remediación enfocada PR2 atomic writer: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 20 passed.
+- Verificación CLI afectada por core: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 8 passed.
+- Verificación final remediación enfocada PR2 atomic writer: `/home/jonialen/.local/bin/uv run pytest` → 91 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- Safety net remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 20 passed.
+- RED remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'data_processed_symlink or ancestro_data_intercambiado or outputs_o_tablas_symlink'` → 4 failed, 20 deselected; confirmó que `data/processed -> data/raw`, `data` reemplazado por symlink, `outputs -> outside` y `outputs/tablas -> data/raw` no se rechazaban.
+- GREEN focal remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'data_processed_symlink or ancestro_data_intercambiado or outputs_o_tablas_symlink or parent_intercambiado or defaults'` → 6 passed, 18 deselected.
+- Verificación core remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` → 24 passed.
+- Verificación CLI afectada por core: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 8 passed.
+- Verificación final remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest` → 95 passed.
+- Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
 
 ## Archivos cambiados
 
 | Archivo | Acción | Descripción |
 |---|---|---|
-| `src/proyecto1_ds/cleaning.py` | Creado/modificado | Motor core de limpieza conservadora; remediación registra cada temporal antes de invocar el writer para limpiar residuos si la escritura crea el `.tmp` y luego falla; agrega contrato `project_root` obligatorio para rutas personalizadas y valida que salidas queden bajo `data/processed/` y `outputs/tablas/` antes de crear directorios o escribir. |
-| `tests/test_cleaning.py` | Creado/modificado | Pruebas unitarias TDD para reglas seguras, errores, atomicidad, idempotencia y no mutación; agregado caso de fallo durante escritura de temp sin residuos `.tmp`, guard contra traversal/rutas fuera de raíz y rechazo temprano de rutas personalizadas sin `project_root`. |
-| `openspec/changes/clean-dataset-generation/tasks.md` | Modificado | Marcadas como completadas las tareas PR1 del core y concretado el follow-up 4.1 de duplicación con `diagnostics.py`. |
-| `openspec/changes/clean-dataset-generation/apply-progress.md` | Creado/modificado | Evidencia de slice, TDD, pruebas, pendientes y remediación PR1. |
+| `scripts/limpiar_dataset.py` | Creado | CLI delgado con `ROOT`, parser, `main()->int`, defaults del proyecto, guards de `data/interim`, `data/processed` y `outputs/tablas`, manejo de errores esperados sin traceback y delegación al core. |
+| `tests/test_cleaning_cli.py` | Creado | Pruebas TDD de éxito default con `tmp_path`, entrada ausente sin parciales, guards de rutas y error de escritura sin traceback. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | El core rechaza que el CSV limpio sea `data/processed`, un directorio existente o una ruta sin sufijo `.csv` antes de crear directorios o ejecutar la escritura atómica. |
+| `scripts/limpiar_dataset.py` | Modificado | El CLI aplica el mismo guard temprano para `--output-file`, preservando stderr sin traceback y evitando efectos laterales. |
+| `tests/test_cleaning_cli.py` | Modificado | Agregadas regresiones para `--output-file data/processed` inexistente/existente, directorio existente bajo `data/processed` y archivo CSV válido permitido. |
+| `tests/test_cleaning.py` | Modificado | Agregadas regresiones core para rechazar `clean_csv_path` igual a `data/processed` y directorios existentes sin invocar escritura atómica ni mutar directorios. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | El core valida los tres paths finales (`clean_csv`, bitácora y reporte) como archivos `.csv` no-directorio antes de crear directorios o ejecutar escritura atómica. |
+| `scripts/limpiar_dataset.py` | Modificado | Se documentó que el guard de `--output-file` es solo UX temprano; `write_cleaning_outputs()` queda como guard autoritativo. |
+| `tests/test_cleaning.py` | Modificado | Agregadas regresiones parametrizadas para directorios existentes en `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`, verificando no clobber, no backups/tmp y error esperado. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | `_temporary_file()` crea temporales únicos en el directorio destino confiable con `os.open(..., O_CREAT|O_EXCL, dir_fd=...)`, conserva el descriptor abierto para escribir con `os.fdopen()` y valida que el path temporal siga apuntando al mismo archivo antes del reemplazo atómico. |
+| `tests/test_cleaning.py` | Modificado | Agregadas regresiones contra symlink preexistente con el nombre predecible anterior y contra swap TOCTOU del temp antes del writer, verificando que no redirige escrituras fuera de raíces permitidas. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | Se revalida cada temporal inmediatamente antes de `replace()` y la restauración remueve un destino inseguro vacío (archivo, symlink o directorio) antes de restaurar backups o limpiar salidas nuevas. |
+| `scripts/limpiar_dataset.py` | Modificado | `main()` captura `SystemExit` de `argparse`: errores de argumentos devuelven `1` con usage/error en stderr y sin traceback; `--help` conserva `0`. |
+| `tests/test_cleaning.py` | Modificado | Agregada regresión para temporal intercambiado por directorio antes de `replace()`, verificando error controlado, restauración de salidas previas y ausencia de temporales/backups; aclarado el test de symlink con `pytest.raises(CleaningOutputError)`. |
+| `tests/test_cleaning_cli.py` | Modificado | Agregada regresión de argumentos inválidos (`--desconocido` y `--output-file` sin valor) con exit `1`, usage/error en stderr, sin traceback y sin crear salidas. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | `_safe_unlink()` remueve directorios vacíos creados por swaps de temporales sin enmascarar el error primario; el commit atómico revalida destinos finales justo antes de backup/replace. |
+| `tests/test_cleaning.py` | Modificado | Agregadas regresiones para temporal convertido en directorio antes de validación y destino final convertido en directorio antes de backup, verificando fallo seguro, no backups ocultos y no CSV final parcial. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | La escritura atómica queda anclada a descriptores de directorio padre confiables: apertura con `O_DIRECTORY`/`O_NOFOLLOW`, creación de temporales impredecibles con `os.open(..., dir_fd=...)`, writer sobre el fd abierto, backups/replaces/cleanup relativos al fd y revalidación no-follow de temporales/finales/backups. |
+| `tests/test_cleaning.py` | Modificado | Actualizadas pruebas obsoletas que dependían de `Path.replace`/`tempfile.mkstemp` y agregada regresión de parent directory intercambiado por symlink antes de abrir el directorio padre. |
+| `src/proyecto1_ds/cleaning.py` | Modificado | La validación de raíces de salida ya no usa `Path.resolve()` para autorizar rutas: normaliza léxicamente bajo `project_root`, exige CSV limpio estrictamente bajo `data/processed/*.csv`, exige `tables_dir == outputs/tablas` y prepara padres con traversal seguro desde fd de raíz confiable. |
+| `tests/test_cleaning.py` | Modificado | Agregadas regresiones para `data/processed` symlink a `data/raw`, ancestro `data` intercambiado por symlink antes de crear padres, y symlinks en `outputs`/`outputs/tablas` hacia afuera o rutas protegidas. |
+| `openspec/changes/clean-dataset-generation/tasks.md` | Modificado | Marcadas como completadas las tareas PR2 1.5, 3.1, 3.2 y 3.3 no requerida. |
+| `openspec/changes/clean-dataset-generation/apply-progress.md` | Modificado | Progreso acumulado de PR1 + PR2 con evidencia TDD, pruebas, pendientes y boundary de PR. |
 
 ## Salidas generadas
 
-Ninguna salida real del proyecto fue generada. Las escrituras se probaron solo en `tmp_path` de pytest.
+Ninguna salida real del proyecto fue generada. Las escrituras del CLI se probaron solo bajo `tmp_path` de pytest.
 
 ## Pendientes
 
-- [ ] 1.5 Crear `tests/test_cleaning_cli.py` para CLI/API, exit `0/1`, stderr sin traceback y guards.
-- [ ] 3.1 Crear `scripts/limpiar_dataset.py` con `ROOT`, `main()->int`, defaults y errores esperados.
-- [ ] 3.2 Guardar desde CLI solo en `data/processed/` y `outputs/tablas/`; leer solo `data/interim/`.
-- [ ] 3.3 Exportar en `src/proyecto1_ds/__init__.py` solo si el API público lo exige.
-- [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py` y `diagnostics.py` después de PR1: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
+- [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py`, `diagnostics.py` y guards tempranos del CLI en PR3/refactor/final cleanup: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
 - [ ] 4.2 Ejecutar CLI para generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
 - [ ] 4.3 Ejecutar `uv run pytest` y verificar idempotencia, atomicidad, edges, exit codes y no mutación.
 
 ## Issues / desviaciones
 
-- No se implementó CLI por límite explícito de PR1.
-- No se generaron archivos reales en `data/processed/` ni `outputs/tablas/` por límite explícito de PR1.
-- La inconsistencia documental de estrategia de cadena fue corregida: `tasks.md`, prompt y Engram indican `stacked-to-main`.
-- Remediación PR1: se corrigió el residuo `.tmp` cuando el writer crea un temporal y falla antes de que el código anterior lo registrara para cleanup.
-- Remediación PR1: `write_cleaning_outputs()` ahora acepta `project_root`; con raíz explícita (o rutas por defecto) rechaza salidas fuera de `data/processed/` y `outputs/tablas/` antes de crear directorios/escribir.
-- Remediación PR1: `write_cleaning_outputs()` ahora rechaza cualquier ruta personalizada sin `project_root` antes de crear directorios o escribir; los tests con `tmp_path` pasan raíz explícita y escriben solo bajo `tmp_path/data/processed/` y `tmp_path/outputs/tablas/`.
-- Readability PR1: no se extrajo helper compartido con `diagnostics.py` en este slice; el follow-up 4.1 ahora lista duplicaciones concretas para una refactorización posterior.
+- No se implementó generación real de salidas por límite explícito de PR2; queda para PR3/tarea 4.2.
+- No se modificó `src/proyecto1_ds/__init__.py`; el API público no lo exigía porque el CLI importa directamente desde `proyecto1_ds.cleaning` y los tests existentes ya usan ese submódulo.
+- El CLI imprime tres rutas de salida en stdout en éxito; los errores esperados salen por stderr con prefijo `Error de limpieza:` y sin traceback.
+- Se mantiene el guard temprano duplicado en CLI solo como mejora de UX para fallar antes de leer/escribir; el guard autoritativo queda en `write_cleaning_outputs()` y el refactor de duplicación se aclaró como pendiente de PR3/refactor/final cleanup.
+- Se conserva el esquema de nombres de backup con PID, pero los backups ya no usan `Path.replace()`: se ejecutan con `os.replace(..., src_dir_fd=parent_fd, dst_dir_fd=parent_fd)` y se valida que el backup resultante corresponda al archivo final regular previamente observado.
+- Si un destino inseguro intercambiado por directorio no puede removerse de forma segura durante restauración, se conserva el comportamiento controlado de `CleaningOutputError` con contexto y backups preservados; los casos cubiertos restauran salidas previas y no dejan directorios finales.
+- Si un destino final es intercambiado por directorio antes de la revalidación no-follow, se rechaza sin moverlo; si el intercambio ocurre en la ventana inmediata del `replace`, el backup resultante se valida contra el inode regular esperado, se restaura el directorio al nombre final y se rechaza con `CleaningOutputError` sin CSV final parcial ni backup oculto persistente.
+- Si el path del directorio padre validado se intercambia por symlink antes de abrirlo, la apertura con `O_NOFOLLOW` falla como `CleaningOutputError` y no se escribe fuera del proyecto. Si el intercambio ocurre después de abrir el fd, las operaciones siguen ancladas al directorio ya abierto, no al symlink reemplazante.
+- La autorización de rutas se volvió léxica: symlinks existentes en `data/processed` u `outputs/tablas` ya no pueden hacer que raíz permitida y destino colapsen al mismo path protegido; además `tables_dir` queda restringido exactamente a `outputs/tablas` para mantener el contrato actual.

@@ -6,7 +6,9 @@ import csv
 from dataclasses import dataclass
 import os
 from pathlib import Path
-from typing import Any, Callable
+import secrets
+import stat
+from typing import Any, Callable, TextIO
 
 
 DEFAULT_INTERIM_CSV = Path("data/interim/establecimientos_diversificado_raw_unificado.csv")
@@ -45,6 +47,14 @@ class CleaningOutputs:
     clean_csv_path: Path
     log_path: Path
     report_path: Path
+
+
+@dataclass(frozen=True)
+class _OutputWritePlan:
+    path: Path
+    parent_fd: int
+    parent_path: Path
+    writer: Callable[[TextIO], None]
 
 
 def clean_dataset(interim_csv: Path | str = DEFAULT_INTERIM_CSV) -> CleaningResult:
@@ -88,18 +98,28 @@ def write_cleaning_outputs(
     clean_path = Path(clean_csv_path)
     tables_root = Path(tables_dir)
     guard_root = _output_guard_root(clean_path, tables_root, project_root)
-    clean_path, tables_root = _validate_output_roots(clean_path, tables_root, guard_root)
+    clean_path, tables_root, guard_root = _validate_output_roots(clean_path, tables_root, guard_root)
     log_path = tables_root / "bitacora_limpieza.csv"
     report_path = tables_root / "reporte_calidad_antes_despues.csv"
-    for destination in (clean_path, log_path, report_path):
-        destination.parent.mkdir(parents=True, exist_ok=True)
-    _write_outputs_atomically(
-        [
-            (clean_path, lambda path: _write_rows(path, result.header, result.rows)),
-            (log_path, lambda path: _write_rows(path, LOG_FIELDS, result.cleaning_log)),
-            (report_path, lambda path: _write_rows(path, REPORT_FIELDS, result.quality_report)),
-        ]
-    )
+    for output_file in (clean_path, log_path, report_path):
+        _require_output_csv_file(output_file)
+    output_specs: list[tuple[Path, Callable[[TextIO], None]]] = [
+        (clean_path, lambda csv_file: _write_rows(csv_file, result.header, result.rows)),
+        (log_path, lambda csv_file: _write_rows(csv_file, LOG_FIELDS, result.cleaning_log)),
+        (report_path, lambda csv_file: _write_rows(csv_file, REPORT_FIELDS, result.quality_report)),
+    ]
+    _validate_existing_outputs_without_creating_dirs([path for path, _writer in output_specs], guard_root)
+    parent_fds = _open_secure_output_parent_fds([path for path, _writer in output_specs], guard_root)
+    try:
+        _write_outputs_atomically(
+            [
+                _OutputWritePlan(path=path, parent_fd=parent_fds[path.parent], parent_path=path.parent, writer=writer)
+                for path, writer in output_specs
+            ]
+        )
+    finally:
+        for parent_fd in parent_fds.values():
+            os.close(parent_fd)
     return CleaningOutputs(clean_csv_path=clean_path, log_path=log_path, report_path=report_path)
 
 
@@ -111,27 +131,175 @@ def _output_guard_root(clean_csv_path: Path, tables_dir: Path, project_root: Pat
     raise CleaningOutputError("project_root es obligatorio para rutas de salida personalizadas.")
 
 
-def _validate_output_roots(clean_csv_path: Path, tables_dir: Path, project_root: Path) -> tuple[Path, Path]:
-    root = project_root.resolve(strict=False)
-    clean_path = _resolve_from_root(clean_csv_path, root)
-    tables_root = _resolve_from_root(tables_dir, root)
-    _require_path_under(clean_path, root / "data" / "processed")
-    _require_path_under(tables_root, root / "outputs" / "tablas")
-    return clean_path, tables_root
+def _validate_output_roots(clean_csv_path: Path, tables_dir: Path, project_root: Path) -> tuple[Path, Path, Path]:
+    root = _absolute_lexical_path(project_root)
+    clean_path = _absolute_lexical_path(clean_csv_path, root)
+    tables_root = _absolute_lexical_path(tables_dir, root)
+    processed_root = root / "data" / "processed"
+    _require_path_strictly_under(clean_path, processed_root)
+    _require_clean_csv_file(clean_path, processed_root)
+    allowed_tables_root = root / "outputs" / "tablas"
+    if tables_root != allowed_tables_root:
+        raise CleaningOutputError(f"ruta de salida no permitida: {tables_root} debe ser exactamente {allowed_tables_root}.")
+    return clean_path, tables_root, root
 
 
-def _resolve_from_root(path: Path, root: Path) -> Path:
-    if path.is_absolute():
-        return path.resolve(strict=False)
-    return (root / path).resolve(strict=False)
+def _absolute_lexical_path(path: Path, root: Path | None = None) -> Path:
+    base = path if path.is_absolute() else (root / path if root is not None else Path.cwd() / path)
+    return Path(os.path.normpath(os.fspath(base)))
 
 
-def _require_path_under(path: Path, allowed_root: Path) -> None:
-    allowed = allowed_root.resolve(strict=False)
+def _require_path_strictly_under(path: Path, allowed_root: Path) -> None:
     try:
-        path.relative_to(allowed)
+        relative = path.relative_to(allowed_root)
     except ValueError as exc:
-        raise CleaningOutputError(f"ruta de salida no permitida: {path} debe estar bajo {allowed}.") from exc
+        raise CleaningOutputError(f"ruta de salida no permitida: {path} debe estar bajo {allowed_root}.") from exc
+    if not relative.parts:
+        raise CleaningOutputError(
+            f"ruta de salida no permitida: {path} debe ser un archivo CSV dentro de {allowed_root}, "
+            "no el directorio data/processed."
+        )
+
+
+def _require_clean_csv_file(path: Path, processed_root: Path) -> None:
+    if path == processed_root:
+        raise CleaningOutputError(
+            f"ruta de salida no permitida: {path} debe ser un archivo CSV dentro de {processed_root}, "
+            "no el directorio data/processed."
+        )
+    _require_output_csv_file(path)
+
+
+def _require_output_csv_file(path: Path) -> None:
+    if path.suffix.casefold() != ".csv":
+        raise CleaningOutputError(f"ruta de salida no permitida: {path} debe ser un archivo CSV y terminar en .csv.")
+
+
+def _validate_existing_outputs_without_creating_dirs(paths: list[Path], project_root: Path) -> None:
+    for path in paths:
+        parent_fd = _try_open_secure_existing_directory(project_root, path.parent)
+        if parent_fd is None:
+            continue
+        try:
+            _require_output_csv_entry(parent_fd, path.name, path)
+        finally:
+            os.close(parent_fd)
+
+
+def _open_secure_output_parent_fds(paths: list[Path], project_root: Path) -> dict[Path, int]:
+    parent_fds: dict[Path, int] = {}
+    try:
+        for path in paths:
+            if path.parent not in parent_fds:
+                parent_fds[path.parent] = _open_secure_output_directory(project_root, path.parent)
+        for path in paths:
+            _require_output_csv_entry(parent_fds[path.parent], path.name, path)
+    except Exception:
+        for parent_fd in parent_fds.values():
+            os.close(parent_fd)
+        raise
+    return parent_fds
+
+
+def _try_open_secure_existing_directory(project_root: Path, directory: Path) -> int | None:
+    root_fd = _open_project_root(project_root)
+    current_fd = root_fd
+    display_path = project_root
+    try:
+        for component in _relative_directory_parts(directory, project_root):
+            display_path = display_path / component
+            try:
+                next_fd = _open_directory_component(current_fd, component, display_path)
+            except FileNotFoundError:
+                os.close(current_fd)
+                return None
+            os.close(current_fd)
+            current_fd = next_fd
+        _require_directory_fd_matches_path(current_fd, directory)
+        return current_fd
+    except Exception:
+        os.close(current_fd)
+        raise
+
+
+def _open_secure_output_directory(project_root: Path, directory: Path) -> int:
+    root_fd = _open_project_root(project_root)
+    current_fd = root_fd
+    display_path = project_root
+    try:
+        for component in _relative_directory_parts(directory, project_root):
+            display_path = display_path / component
+            try:
+                os.mkdir(component, mode=0o755, dir_fd=current_fd)
+            except FileExistsError:
+                pass
+            except OSError as exc:
+                raise CleaningOutputError(f"directorio de salida inseguro: {display_path} no se pudo crear.") from exc
+            next_fd = _open_directory_component(current_fd, component, display_path)
+            os.close(current_fd)
+            current_fd = next_fd
+        _require_directory_fd_matches_path(current_fd, directory)
+        return current_fd
+    except Exception:
+        os.close(current_fd)
+        raise
+
+
+def _open_project_root(project_root: Path) -> int:
+    flags = _directory_open_flags()
+    try:
+        return os.open(project_root, flags)
+    except OSError as exc:
+        raise CleaningOutputError(f"directorio de salida inseguro: raíz de proyecto no confiable {project_root}.") from exc
+
+
+def _open_directory_component(parent_fd: int, component: str, display_path: Path) -> int:
+    flags = _directory_open_flags()
+    try:
+        return os.open(component, flags, dir_fd=parent_fd)
+    except FileNotFoundError:
+        raise
+    except OSError as exc:
+        raise CleaningOutputError(f"directorio de salida inseguro: {display_path} no es un directorio real sin symlinks.") from exc
+
+
+def _directory_open_flags() -> int:
+    flags = os.O_RDONLY | os.O_DIRECTORY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    return flags
+
+
+def _relative_directory_parts(directory: Path, project_root: Path) -> tuple[str, ...]:
+    try:
+        relative = directory.relative_to(project_root)
+    except ValueError as exc:
+        raise CleaningOutputError(f"ruta de salida no permitida: {directory} debe estar bajo {project_root}.") from exc
+    parts = relative.parts
+    if any(part in {"", ".", ".."} for part in parts):
+        raise CleaningOutputError(f"ruta de salida no permitida: {directory} contiene componentes inseguros.")
+    return parts
+
+
+def _require_directory_fd_matches_path(directory_fd: int, directory: Path) -> None:
+    try:
+        path_status = os.stat(directory, follow_symlinks=False)
+    except OSError as exc:
+        raise CleaningOutputError(f"directorio de salida inseguro: {directory} cambió durante la validación.") from exc
+    fd_status = os.fstat(directory_fd)
+    if not stat.S_ISDIR(path_status.st_mode) or path_status.st_dev != fd_status.st_dev or path_status.st_ino != fd_status.st_ino:
+        raise CleaningOutputError(f"directorio de salida inseguro: {directory} no coincide con el descriptor confiable.")
+
+
+def _require_output_csv_entry(parent_fd: int, final_name: str, final_path: Path) -> None:
+    try:
+        final_status = os.stat(final_name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISREG(final_status.st_mode):
+        raise CleaningOutputError(f"ruta de salida no permitida: {final_path} debe ser un archivo CSV, no un directorio o symlink.")
 
 
 def _read_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
@@ -343,31 +511,50 @@ def _quality_report(
     return report
 
 
-def _write_rows(path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
-    with path.open("w", newline="", encoding="utf-8") as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator="\n")
-        writer.writeheader()
-        writer.writerows(rows)
+def _write_rows(csv_file: TextIO, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
+    writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
 
 
-def _write_outputs_atomically(plans: list[tuple[Path, Callable[[Path], None]]]) -> None:
-    temps: list[tuple[Path, Path]] = []
-    backups: list[tuple[Path, Path, bool]] = []
+def _write_outputs_atomically(plans: list[_OutputWritePlan]) -> None:
+    temps: list[tuple[int, Path, str, str, Path, os.stat_result]] = []
+    backups: list[tuple[int, Path, str, str, bool]] = []
     committed = False
     try:
-        for final_path, writer in plans:
-            temp_path = _temporary_path(final_path)
-            temps.append((temp_path, final_path))
-            writer(temp_path)
-        for _temp_path, final_path in temps:
-            backup_path = _backup_path(final_path)
-            if final_path.exists():
-                final_path.replace(backup_path)
-                backups.append((backup_path, final_path, True))
+        for plan in plans:
+            parent_fd = plan.parent_fd
+            final_name = plan.path.name
+            temp_name, temp_file, temp_status = _temporary_file(parent_fd, final_name, plan.parent_path)
+            temps.append((parent_fd, plan.parent_path, temp_name, final_name, plan.path, temp_status))
+            with temp_file as csv_file:
+                plan.writer(csv_file)
+                csv_file.flush()
+            _require_same_temporary_file(parent_fd, temp_name, plan.parent_path / temp_name, temp_status)
+        for parent_fd, parent_path, _temp_name, final_name, final_path, _temp_status in temps:
+            backup_name = _backup_name(final_name)
+            final_status = _stat_existing_output_file(parent_fd, final_name, final_path)
+            if final_status is not None:
+                os.replace(final_name, backup_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                try:
+                    _require_backup_matches(parent_fd, backup_name, parent_path / backup_name, final_status)
+                except CleaningOutputError:
+                    _restore_swapped_backup(parent_fd, backup_name, final_name, final_path)
+                    raise
+                backups.append((parent_fd, parent_path, backup_name, final_name, True))
             else:
-                backups.append((backup_path, final_path, False))
-        for temp_path, final_path in temps:
-            temp_path.replace(final_path)
+                backups.append((parent_fd, parent_path, backup_name, final_name, False))
+        for parent_fd, parent_path, temp_name, final_name, final_path, temp_status in temps:
+            _require_same_temporary_file(parent_fd, temp_name, parent_path / temp_name, temp_status)
+            replaced_final = False
+            try:
+                os.replace(temp_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+                replaced_final = True
+                _require_same_temporary_file(parent_fd, final_name, final_path, temp_status)
+            except Exception:
+                if replaced_final:
+                    _safe_unlink(parent_fd, final_name, final_path)
+                raise
         committed = True
     except Exception as exc:
         restore_errors = _restore_outputs(backups)
@@ -379,40 +566,136 @@ def _write_outputs_atomically(plans: list[tuple[Path, Callable[[Path], None]]]) 
             ) from exc
         raise
     finally:
-        for temp_path, _final_path in temps:
-            _safe_unlink(temp_path)
+        for parent_fd, parent_path, temp_name, _final_name, _final_path, _temp_status in temps:
+            _safe_unlink(parent_fd, temp_name, parent_path / temp_name)
         if committed:
-            for backup_path, _final_path, _existed in backups:
-                _safe_unlink(backup_path)
+            for parent_fd, parent_path, backup_name, _final_name, existed in backups:
+                if existed:
+                    _safe_unlink(parent_fd, backup_name, parent_path / backup_name)
 
 
-def _temporary_path(path: Path) -> Path:
-    return path.with_name(f".{path.name}.{os.getpid()}.tmp")
+def _temporary_file(parent_fd: int, final_name: str, parent_path: Path) -> tuple[str, TextIO, os.stat_result]:
+    flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    for _attempt in range(100):
+        temp_name = f".{final_name}.{secrets.token_hex(16)}.tmp"
+        try:
+            file_descriptor = os.open(temp_name, flags, mode=0o600, dir_fd=parent_fd)
+            break
+        except FileExistsError:
+            continue
+        except OSError as exc:
+            raise CleaningOutputError(f"no se pudo crear temporal seguro bajo {parent_path}.") from exc
+    else:
+        raise CleaningOutputError(f"no se pudo crear temporal seguro bajo {parent_path}: nombres agotados.")
+    try:
+        temp_status = os.fstat(file_descriptor)
+        temp_file = os.fdopen(file_descriptor, "w", newline="", encoding="utf-8")
+    except Exception:
+        os.close(file_descriptor)
+        _safe_unlink(parent_fd, temp_name, parent_path / temp_name)
+        raise
+    return temp_name, temp_file, temp_status
 
 
-def _backup_path(path: Path) -> Path:
-    return path.with_name(f".{path.name}.{os.getpid()}.backup")
+def _require_same_temporary_file(parent_fd: int, name: str, display_path: Path, expected_status: os.stat_result) -> None:
+    try:
+        actual_status = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError as exc:
+        raise CleaningOutputError(f"ruta temporal insegura: {display_path} fue removida antes del reemplazo.") from exc
+    if not stat.S_ISREG(actual_status.st_mode):
+        raise CleaningOutputError(f"ruta temporal insegura: {display_path} dejó de ser un archivo regular.")
+    if actual_status.st_dev != expected_status.st_dev or actual_status.st_ino != expected_status.st_ino:
+        raise CleaningOutputError(f"ruta temporal insegura: {display_path} fue reemplazada antes del reemplazo atómico.")
 
 
-def _restore_outputs(backups: list[tuple[Path, Path, bool]]) -> list[str]:
+def _stat_existing_output_file(parent_fd: int, final_name: str, final_path: Path) -> os.stat_result | None:
+    try:
+        final_status = os.stat(final_name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(final_status.st_mode):
+        raise CleaningOutputError(f"ruta de salida no permitida: {final_path} debe ser un archivo CSV, no un directorio o symlink.")
+    return final_status
+
+
+def _require_backup_matches(parent_fd: int, backup_name: str, backup_path: Path, expected_status: os.stat_result) -> None:
+    try:
+        backup_status = os.stat(backup_name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError as exc:
+        raise CleaningOutputError(f"backup inseguro: {backup_path} no fue creado desde el archivo final esperado.") from exc
+    if not stat.S_ISREG(backup_status.st_mode):
+        raise CleaningOutputError(f"ruta de salida no permitida: {backup_path} debe ser un archivo CSV, no un directorio o symlink.")
+    if backup_status.st_dev != expected_status.st_dev or backup_status.st_ino != expected_status.st_ino:
+        raise CleaningOutputError(f"backup inseguro: {backup_path} no corresponde al archivo final validado.")
+
+
+def _restore_swapped_backup(parent_fd: int, backup_name: str, final_name: str, final_path: Path) -> None:
+    try:
+        os.replace(backup_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+    except OSError as exc:
+        raise CleaningOutputError(f"destino inseguro no restaurado={final_path}; backup={backup_name}; causa={exc}") from exc
+
+
+def _backup_name(final_name: str) -> str:
+    return f".{final_name}.{os.getpid()}.backup"
+
+
+def _restore_outputs(backups: list[tuple[int, Path, str, str, bool]]) -> list[str]:
     restore_errors: list[str] = []
-    for backup_path, final_path, existed in reversed(backups):
+    for parent_fd, parent_path, backup_name, final_name, existed in reversed(backups):
+        backup_path = parent_path / backup_name
+        final_path = parent_path / final_name
         if existed:
-            if backup_path.exists():
+            if _entry_exists(parent_fd, backup_name):
+                remove_error = _remove_path_for_restore(parent_fd, final_name, final_path)
+                if remove_error:
+                    restore_errors.append(remove_error)
+                    continue
                 try:
-                    backup_path.replace(final_path)
+                    os.replace(backup_name, final_name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
                 except OSError as exc:
                     restore_errors.append(f"destino={final_path}; backup={backup_path}; causa={exc}")
         else:
-            _safe_unlink(final_path)
+            remove_error = _remove_path_for_restore(parent_fd, final_name, final_path)
+            if remove_error:
+                restore_errors.append(remove_error)
     return restore_errors
 
 
-def _safe_unlink(path: Path) -> None:
+def _entry_exists(parent_fd: int, name: str) -> bool:
     try:
-        path.unlink()
+        os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _remove_path_for_restore(parent_fd: int, name: str, path: Path) -> str:
+    try:
+        path_status = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        if stat.S_ISDIR(path_status.st_mode):
+            return f"destino inseguro no removido={path}; causa=es directorio"
+        else:
+            os.unlink(name, dir_fd=parent_fd)
+    except FileNotFoundError:
+        return ""
+    except OSError as exc:
+        return f"destino inseguro no removido={path}; causa={exc}"
+    return ""
+
+
+def _safe_unlink(parent_fd: int, name: str, path: Path) -> None:
+    try:
+        os.unlink(name, dir_fd=parent_fd)
     except FileNotFoundError:
         pass
+    except IsADirectoryError:
+        try:
+            os.rmdir(name, dir_fd=parent_fd)
+        except (FileNotFoundError, OSError):
+            pass
 
 
 def _log_row(*, variable: str, rule: str, affected: int, justification: str, risk: str, evidence: str) -> dict[str, str]:

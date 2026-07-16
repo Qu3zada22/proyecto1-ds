@@ -2,11 +2,11 @@
 
 ## Slice actual
 
-- PR: 2 / stacked-to-main.
-- Alcance: CLI de limpieza, exit codes, guards de rutas y pruebas CLI.
-- Base declarada: `main` después del PR1 `6dab5c4 feat: add core cleaning engine`.
-- Fuera de alcance en este slice: generación de salidas reales desde datos del proyecto, tarea 4.2, mutación de `data/raw/`, `data/interim/`, `outputs/`, HTML fuente o documentos.
-- Nota de consistencia: se mantuvo la estrategia `auto-chain` con `stacked-to-main` y presupuesto de revisión de 400 líneas.
+- PR: 3 / stacked-to-main.
+- Alcance: generar las salidas reales de limpieza y verificar idempotencia, suite completa y no mutación de fuentes protegidas.
+- Base declarada: `main` después del PR2 `1811f3d feat: add cleaning output CLI`.
+- Fuera de alcance en este slice: refactor amplio de `src` y tarea 4.1.
+- Nota de consistencia: se mantuvo la estrategia `auto-chain` con `stacked-to-main`; este slice contiene principalmente artefactos generados.
 
 ## Tareas completadas
 
@@ -36,6 +36,8 @@
 - [x] Remediación final PR2 TOCTOU: revalidar el destino final inmediatamente antes del backup para rechazar directorios intercambiados sin moverlos a backup ni escribir CSV final.
 - [x] Remediación enfocada PR2 atomic writer: anclar temporales, backups, reemplazos y cleanup a file descriptors de directorios padre confiables con `dir_fd` y `O_NOFOLLOW`.
 - [x] Remediación final PR2 hardening: reemplazar validación con `Path.resolve()` por validación léxica bajo `project_root` y crear/abrir ancestros con traversal seguro `dir_fd` + `O_NOFOLLOW`, rechazando symlinks en `data/processed`, `data`, `outputs` y `outputs/tablas` antes de escribir.
+- [x] 4.2 Ejecutar CLI y generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv` desde el CSV intermedio vigente.
+- [x] 4.3 Verificar idempotencia byte-for-byte, ejecutar suite completa y confirmar que `data/raw/`, `data/interim/` y `docs/` no cambiaron.
 
 ## TDD Cycle Evidence
 
@@ -65,6 +67,8 @@
 | Remediación final PR2 TOCTOU: destino final convertido en directorio antes de backup | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py tests/test_cleaning_cli.py` baseline 25/25 | ✅ El test RED falló con `IsADirectoryError` al mover el directorio a `.backup` y escribir el CSV final en la ruta original | ✅ Test focal pasó; `tests/test_cleaning.py` pasó con 19/19 | ✅ Cubre swap del CSV limpio final a directorio con marcador inmediatamente antes de backup; exige no moverlo a backup, no escribir CSV final y no dejar temporales/backups | ✅ `_write_outputs_atomically()` revalida cada destino final como CSV no-directorio justo después de calcular backup y antes de `final_path.replace(backup_path)` |
 | Remediación enfocada PR2 atomic writer con `dir_fd` | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` baseline 19/19 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'symlink or directorio_antes_de_replace or directorio_temporal_intercambiado_antes_de_validacion or destino_final_antes_de_backup or parent_intercambiado'` falló con 4 failed/6 selected: temporales y parent swap no estaban anclados a fd y el destino final podía moverse a backup tras revalidación | ✅ Focal pasó con 6/6; `tests/test_cleaning.py` pasó con 20/20; `tests/test_cleaning_cli.py` pasó con 8/8; suite completa pasó con 91/91 | ✅ Cubre symlink predecible, swap de temporal a symlink, swap de temporal a directorio, swap de destino final a directorio después de revalidación y parent directory convertido en symlink antes de abrirlo | ✅ `_write_outputs_atomically()` abre padres con `os.open(... O_DIRECTORY|O_NOFOLLOW)`, crea temporales con `os.open(... O_CREAT|O_EXCL, dir_fd=...)`, escribe por fd abierto y usa `os.replace`/`os.unlink` relativos al fd |
 | Remediación final PR2 hardening de validación/traversal | `tests/test_cleaning.py` | Unit | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py` baseline 20/20 | ✅ `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning.py -k 'data_processed_symlink or ancestro_data_intercambiado or outputs_o_tablas_symlink'` falló con 4/4: `Path.resolve()` colapsaba raíces permitidas hacia `data/raw`/afuera y el `mkdir`/open por path seguía ancestros symlink | ✅ Focal pasó con 6/6 tras actualizar parent/defaults; `tests/test_cleaning.py` pasó con 24/24; `tests/test_cleaning_cli.py` pasó con 8/8; suite completa pasó con 95/95 | ✅ Cubre `data/processed -> data/raw`, `data` reemplazado por symlink antes de crear dirs, `outputs -> outside` y `outputs/tablas -> data/raw` sin mutar targets protegidos | ✅ Validación de raíces ahora es léxica; preparación de padres abre `project_root` confiable y recorre/crea cada componente con `dir_fd`, `O_DIRECTORY` y `O_NOFOLLOW`; el writer consume esos fd confiables |
+| 4.2 | `tests/test_cleaning.py`, `tests/test_cleaning_cli.py` | Unit + ejecución CLI | ✅ Suite PR2 previa en verde; no se modificó código | ✅ Cobertura RED histórica ya exigía defaults, salidas reales permitidas e idempotencia | ✅ CLI real ejecutó con exit 0 y creó las tres salidas esperadas | ✅ Reejecución CLI mantuvo SHA-256 idéntico en las tres salidas | ➖ Sin refactor: tarea de generación de artefactos |
+| 4.3 | `tests/test_cleaning.py`, `tests/test_cleaning_cli.py` | Unit + verificación | ✅ Sin cambios en `src`; se verificaron rutas protegidas | ✅ Cobertura RED histórica cubre atomicidad, edges, exit codes y no mutación | ✅ `/home/jonialen/.local/bin/uv run pytest` pasó con 97/97 | ✅ `data/raw/`, `data/interim/` y `docs/` sin cambios en `git status` | ➖ Sin refactor: se dejó 4.1 pendiente por instrucción explícita |
 
 ## Tests ejecutados
 
@@ -123,6 +127,11 @@
 - Verificación CLI afectada por core: `/home/jonialen/.local/bin/uv run pytest tests/test_cleaning_cli.py` → 8 passed.
 - Verificación final remediación final PR2 hardening: `/home/jonialen/.local/bin/uv run pytest` → 95 passed.
 - Verificación final de artefactos protegidos: `git status --short -- data/raw data/interim data/processed outputs docs` → sin cambios.
+- PR3 generación: `/home/jonialen/.local/bin/uv run python scripts/limpiar_dataset.py` → exit 0; generó CSV limpio, bitácora y reporte.
+- PR3 existencia/conteos/checksums: `data/processed/establecimientos_diversificado_limpio.csv` → 11867 filas, SHA-256 `5de3d05752f38f249180e08f46369e7d6225a5b8acc7c77535b40a4ffac78c03`; `outputs/tablas/bitacora_limpieza.csv` → 12 filas, SHA-256 `8a7faadf69fb15531d62d4bf1ae08e35c9382ce6c27c005d75960e078f06fe34`; `outputs/tablas/reporte_calidad_antes_despues.csv` → 27 filas, SHA-256 `3e10db84354614849d23d43f34466aa0a990b69aa1a90ba528d4060bbf75c962`.
+- PR3 idempotencia: reejecución del CLI → exit 0; los tres SHA-256 quedaron idénticos byte-for-byte.
+- PR3 verificación final: `/home/jonialen/.local/bin/uv run pytest` → 97 passed.
+- PR3 verificación de artefactos protegidos: `git status --short -- data/raw data/interim docs` → sin cambios.
 
 ## Archivos cambiados
 
@@ -149,22 +158,27 @@
 | `tests/test_cleaning.py` | Modificado | Actualizadas pruebas obsoletas que dependían de `Path.replace`/`tempfile.mkstemp` y agregada regresión de parent directory intercambiado por symlink antes de abrir el directorio padre. |
 | `src/proyecto1_ds/cleaning.py` | Modificado | La validación de raíces de salida ya no usa `Path.resolve()` para autorizar rutas: normaliza léxicamente bajo `project_root`, exige CSV limpio estrictamente bajo `data/processed/*.csv`, exige `tables_dir == outputs/tablas` y prepara padres con traversal seguro desde fd de raíz confiable. |
 | `tests/test_cleaning.py` | Modificado | Agregadas regresiones para `data/processed` symlink a `data/raw`, ancestro `data` intercambiado por symlink antes de crear padres, y symlinks en `outputs`/`outputs/tablas` hacia afuera o rutas protegidas. |
+| `data/processed/establecimientos_diversificado_limpio.csv` | Generado | Dataset limpio real desde `data/interim/establecimientos_diversificado_raw_unificado.csv`. |
+| `outputs/tablas/bitacora_limpieza.csv` | Generado | Bitácora real de reglas aplicadas y decisiones seguras de limpieza. |
+| `outputs/tablas/reporte_calidad_antes_despues.csv` | Generado | Reporte real antes/después con métricas comparables y decisiones diferidas. |
 | `openspec/changes/clean-dataset-generation/tasks.md` | Modificado | Marcadas como completadas las tareas PR2 1.5, 3.1, 3.2 y 3.3 no requerida. |
-| `openspec/changes/clean-dataset-generation/apply-progress.md` | Modificado | Progreso acumulado de PR1 + PR2 con evidencia TDD, pruebas, pendientes y boundary de PR. |
+| `openspec/changes/clean-dataset-generation/tasks.md` | Modificado | Marcadas como completadas las tareas PR3 4.2 y 4.3. |
+| `openspec/changes/clean-dataset-generation/apply-progress.md` | Modificado | Progreso acumulado de PR1 + PR2 + PR3 con evidencia TDD, pruebas, salidas y pendientes. |
 
 ## Salidas generadas
 
-Ninguna salida real del proyecto fue generada. Las escrituras del CLI se probaron solo bajo `tmp_path` de pytest.
+- `data/processed/establecimientos_diversificado_limpio.csv`: 11867 filas de datos; SHA-256 `5de3d05752f38f249180e08f46369e7d6225a5b8acc7c77535b40a4ffac78c03`.
+- `outputs/tablas/bitacora_limpieza.csv`: 12 filas de bitácora; SHA-256 `8a7faadf69fb15531d62d4bf1ae08e35c9382ce6c27c005d75960e078f06fe34`.
+- `outputs/tablas/reporte_calidad_antes_despues.csv`: 27 filas de reporte; SHA-256 `3e10db84354614849d23d43f34466aa0a990b69aa1a90ba528d4060bbf75c962`.
+- Idempotencia: una reejecución del CLI dejó los tres SHA-256 idénticos.
 
 ## Pendientes
 
 - [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py`, `diagnostics.py` y guards tempranos del CLI en PR3/refactor/final cleanup: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
-- [ ] 4.2 Ejecutar CLI para generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
-- [ ] 4.3 Ejecutar `uv run pytest` y verificar idempotencia, atomicidad, edges, exit codes y no mutación.
 
 ## Issues / desviaciones
 
-- No se implementó generación real de salidas por límite explícito de PR2; queda para PR3/tarea 4.2.
+- PR3 completó la generación real de salidas; la nota histórica de PR2 queda cerrada por la tarea 4.2.
 - No se modificó `src/proyecto1_ds/__init__.py`; el API público no lo exigía porque el CLI importa directamente desde `proyecto1_ds.cleaning` y los tests existentes ya usan ese submódulo.
 - El CLI imprime tres rutas de salida en stdout en éxito; los errores esperados salen por stderr con prefijo `Error de limpieza:` y sin traceback.
 - Se mantiene el guard temprano duplicado en CLI solo como mejora de UX para fallar antes de leer/escribir; el guard autoritativo queda en `write_cleaning_outputs()` y el refactor de duplicación se aclaró como pendiente de PR3/refactor/final cleanup.
@@ -173,3 +187,4 @@ Ninguna salida real del proyecto fue generada. Las escrituras del CLI se probaro
 - Si un destino final es intercambiado por directorio antes de la revalidación no-follow, se rechaza sin moverlo; si el intercambio ocurre en la ventana inmediata del `replace`, el backup resultante se valida contra el inode regular esperado, se restaura el directorio al nombre final y se rechaza con `CleaningOutputError` sin CSV final parcial ni backup oculto persistente.
 - Si el path del directorio padre validado se intercambia por symlink antes de abrirlo, la apertura con `O_NOFOLLOW` falla como `CleaningOutputError` y no se escribe fuera del proyecto. Si el intercambio ocurre después de abrir el fd, las operaciones siguen ancladas al directorio ya abierto, no al symlink reemplazante.
 - La autorización de rutas se volvió léxica: symlinks existentes en `data/processed` u `outputs/tablas` ya no pueden hacer que raíz permitida y destino colapsen al mismo path protegido; además `tables_dir` queda restringido exactamente a `outputs/tablas` para mantener el contrato actual.
+- PR3 no modificó `src`; por instrucción explícita, el refactor 4.1 queda pendiente para no aumentar complejidad antes de entregar las salidas limpias.

@@ -50,5 +50,5 @@ Chain strategy: stacked-to-main
 ## Fase 4: REFACTOR, salidas y verificación
 
 - [ ] 4.1 Refactorizar duplicación concreta entre `cleaning.py`, `diagnostics.py` y guards tempranos del CLI en PR3/refactor/final cleanup: lectura CSV estricta, escritura atómica con temporales/backups, formato de invisibles y helpers de reporte; sin mezclar limpieza en `src/proyecto1_ds/diagnostics.py`.
-- [ ] 4.2 Ejecutar CLI para generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
-- [ ] 4.3 Ejecutar `uv run pytest` y verificar idempotencia, atomicidad, edges, exit codes y no mutación.
+- [x] 4.2 Ejecutar CLI para generar `data/processed/establecimientos_diversificado_limpio.csv`, `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
+- [x] 4.3 Ejecutar `uv run pytest` y verificar idempotencia, atomicidad, edges, exit codes y no mutación.

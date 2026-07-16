@@ -1,0 +1,13 @@
+variable,regla,filas_afectadas,justificacion,riesgo,evidencia_fuente
+'<NBSP>',eliminar_columna_nbsp_vacia,11867,Columna compuesta solo por ausencias según diagnóstico y plan de limpieza.,bajo,docs/plan_limpieza.md; outputs/tablas/diagnostico_columnas.csv
+DISTRITO,normalizar_marcador_ausencia,532,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
+ESTABLECIMIENTO,normalizar_espacios_nbsp,1396,"Normalización conservadora de NBSP, bordes y espacios internos múltiples.",bajo,docs/plan_limpieza.md
+ESTABLECIMIENTO,normalizar_marcador_ausencia,5,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
+DIRECCION,normalizar_espacios_nbsp,485,"Normalización conservadora de NBSP, bordes y espacios internos múltiples.",bajo,docs/plan_limpieza.md
+DIRECCION,normalizar_marcador_ausencia,81,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
+TELEFONO,normalizar_espacios_nbsp,8,"Normalización conservadora de NBSP, bordes y espacios internos múltiples.",bajo,docs/plan_limpieza.md
+TELEFONO,normalizar_marcador_ausencia,946,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
+SUPERVISOR,normalizar_espacios_nbsp,133,"Normalización conservadora de NBSP, bordes y espacios internos múltiples.",bajo,docs/plan_limpieza.md
+SUPERVISOR,normalizar_marcador_ausencia,535,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
+DIRECTOR,normalizar_espacios_nbsp,1082,"Normalización conservadora de NBSP, bordes y espacios internos múltiples.",bajo,docs/plan_limpieza.md
+DIRECTOR,normalizar_marcador_ausencia,1830,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md

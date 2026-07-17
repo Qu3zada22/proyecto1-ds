@@ -7,7 +7,9 @@ name = "proyecto1-ds"
 version = "0.1.0"
 description = "Bootstrap reproducible para adquisición y diagnóstico de datos crudos MINEDUC."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "rapidfuzz>=3.14.5",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.0"]

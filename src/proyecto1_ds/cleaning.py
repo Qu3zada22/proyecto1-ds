@@ -9,6 +9,7 @@ from pathlib import Path
 import secrets
 import stat
 from typing import Any, Callable, TextIO
+import unicodedata
 
 
 DEFAULT_SOURCE_CSV = Path("data/source/establecimientos_diversificado_mineduc.csv")
@@ -16,6 +17,24 @@ DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.c
 DEFAULT_TABLES_DIR = Path("outputs/tablas")
 NBSP = "\xa0"
 MISSING_MARKERS = {"", "n/a", "na", "null", "none", "-", ".", "sin dato", "----"}
+# Texto y categóricas que se canonizan a MAYÚSCULAS; excluye identificadores y procedencia.
+UPPERCASE_TEXT_COLUMNS = {
+    "establecimiento",
+    "direccion",
+    "supervisor",
+    "director",
+    "departamento",
+    "municipio",
+    "nivel",
+    "sector",
+    "area",
+    "status",
+    "modalidad",
+    "jornada",
+    "plan",
+    "departamental",
+}
+_WHITESPACE_CONTROLS = {"\t", "\n", "\r", "\f", "\v"}
 LOG_FIELDS = ["variable", "regla", "filas_afectadas", "justificacion", "riesgo", "evidencia_fuente"]
 REPORT_FIELDS = ["metrica", "variable", "antes", "despues", "estado", "nota"]
 
@@ -108,19 +127,89 @@ def write_cleaning_outputs(
         (log_path, lambda csv_file: _write_rows(csv_file, LOG_FIELDS, result.cleaning_log)),
         (report_path, lambda csv_file: _write_rows(csv_file, REPORT_FIELDS, result.quality_report)),
     ]
-    _validate_existing_outputs_without_creating_dirs([path for path, _writer in output_specs], guard_root)
-    parent_fds = _open_secure_output_parent_fds([path for path, _writer in output_specs], guard_root)
-    try:
-        _write_outputs_atomically(
-            [
-                _OutputWritePlan(path=path, parent_fd=parent_fds[path.parent], parent_path=path.parent, writer=writer)
-                for path, writer in output_specs
-            ]
-        )
-    finally:
-        for parent_fd in parent_fds.values():
-            os.close(parent_fd)
+    if _secure_fd_writes_supported():
+        _validate_existing_outputs_without_creating_dirs([path for path, _writer in output_specs], guard_root)
+        parent_fds = _open_secure_output_parent_fds([path for path, _writer in output_specs], guard_root)
+        try:
+            _write_outputs_atomically(
+                [
+                    _OutputWritePlan(path=path, parent_fd=parent_fds[path.parent], parent_path=path.parent, writer=writer)
+                    for path, writer in output_specs
+                ]
+            )
+        finally:
+            for parent_fd in parent_fds.values():
+                os.close(parent_fd)
+    else:
+        _write_outputs_portably(output_specs)
     return CleaningOutputs(clean_csv_path=clean_path, log_path=log_path, report_path=report_path)
+
+
+def _secure_fd_writes_supported() -> bool:
+    return hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW") and os.open in os.supports_dir_fd
+
+
+def _write_outputs_portably(output_specs: list[tuple[Path, Callable[[TextIO], None]]]) -> None:
+    """Escritura atómica portátil para plataformas sin descriptores de directorio (Windows)."""
+
+    temps: list[tuple[Path, Path]] = []
+    backups: list[tuple[Path, Path, bool]] = []
+    committed = False
+    try:
+        for final_path, writer in output_specs:
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            if final_path.exists() and not final_path.is_file():
+                raise CleaningOutputError(f"ruta de salida no permitida: {final_path} debe ser un archivo CSV.")
+            temp_path = final_path.with_name(f".{final_path.name}.{os.getpid()}.tmp")
+            with temp_path.open("w", newline="", encoding="utf-8") as csv_file:
+                writer(csv_file)
+                csv_file.flush()
+            temps.append((temp_path, final_path))
+        for _temp_path, final_path in temps:
+            backup_path = final_path.with_name(f".{final_path.name}.{os.getpid()}.backup")
+            if final_path.exists():
+                final_path.replace(backup_path)
+                backups.append((backup_path, final_path, True))
+            else:
+                backups.append((backup_path, final_path, False))
+        for temp_path, final_path in temps:
+            temp_path.replace(final_path)
+        committed = True
+    except Exception as exc:
+        restore_errors = _restore_portable_outputs(backups)
+        if restore_errors:
+            raise CleaningOutputError(
+                "Falló la restauración de salidas de limpieza; se preservaron backups. " + "; ".join(restore_errors)
+            ) from exc
+        raise
+    finally:
+        for temp_path, _final_path in temps:
+            _safe_unlink_path(temp_path)
+        if committed:
+            for backup_path, _final_path, existed in backups:
+                if existed:
+                    _safe_unlink_path(backup_path)
+
+
+def _restore_portable_outputs(backups: list[tuple[Path, Path, bool]]) -> list[str]:
+    restore_errors: list[str] = []
+    for backup_path, final_path, existed in reversed(backups):
+        if existed:
+            if backup_path.exists():
+                try:
+                    backup_path.replace(final_path)
+                except OSError as exc:
+                    restore_errors.append(f"destino={final_path}; backup={backup_path}; causa={exc}")
+        else:
+            _safe_unlink_path(final_path)
+    return restore_errors
+
+
+def _safe_unlink_path(path: Path) -> None:
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def _output_guard_root(clean_csv_path: Path, tables_dir: Path, project_root: Path | str | None) -> Path:
@@ -334,14 +423,30 @@ def _validate_header(path: Path, header: list[str]) -> None:
 
 
 def _normalize_row(row: dict[str, str], header: list[str]) -> dict[str, str]:
-    return {column: _normalize_value(row.get(column, "")) for column in header}
+    return {column: _normalize_value(row.get(column, ""), uppercase=_should_uppercase(column)) for column in header}
 
 
-def _normalize_value(value: str) -> str:
-    normalized = " ".join(value.replace(NBSP, " ").strip().split())
+def _normalize_value(value: str, *, uppercase: bool) -> str:
+    normalized = _normalized_candidate(value)
     if normalized.casefold() in MISSING_MARKERS:
         return ""
-    return normalized
+    return normalized.upper() if uppercase else normalized
+
+
+def _should_uppercase(column: str) -> bool:
+    return _normalize_label(column) in UPPERCASE_TEXT_COLUMNS
+
+
+def _normalize_label(column: str) -> str:
+    return " ".join(column.replace(NBSP, " ").split()).casefold()
+
+
+def _strip_invisible(value: str) -> str:
+    return "".join(
+        character
+        for character in value
+        if character in _WHITESPACE_CONTROLS or unicodedata.category(character) not in {"Cc", "Cf"}
+    )
 
 
 def _evaluate_nbsp_column(
@@ -388,22 +493,39 @@ def _normalization_log(
     for column in original_header:
         if removed_nbsp and column == NBSP:
             continue
+        uppercase = _should_uppercase(column)
         missing_count = 0
         whitespace_count = 0
+        uppercase_count = 0
         for raw_row, clean_row in zip(raw_rows, clean_rows, strict=True):
             raw_value = raw_row.get(column, "")
             clean_value = clean_row.get(column, "")
-            if clean_value == "" and _normalized_candidate(raw_value).casefold() in MISSING_MARKERS and raw_value != "":
+            candidate = _normalized_candidate(raw_value)
+            if clean_value == "" and candidate.casefold() in MISSING_MARKERS and raw_value != "":
                 missing_count += 1
-            elif raw_value != clean_value:
+                continue
+            if raw_value != candidate:
                 whitespace_count += 1
+            if uppercase and candidate != candidate.upper():
+                uppercase_count += 1
         if whitespace_count:
             rows.append(
                 _log_row(
                     variable=_display_value(column),
                     rule="normalizar_espacios_nbsp",
                     affected=whitespace_count,
-                    justification="Normalización conservadora de NBSP, bordes y espacios internos múltiples.",
+                    justification="Normalización conservadora de NBSP, bordes, espacios múltiples y caracteres invisibles.",
+                    risk="bajo",
+                    evidence="docs/plan_limpieza.md",
+                )
+            )
+        if uppercase_count:
+            rows.append(
+                _log_row(
+                    variable=_display_value(column),
+                    rule="normalizar_mayusculas",
+                    affected=uppercase_count,
+                    justification="Texto canonizado a mayúsculas según la convención del dataset; se preservan las tildes.",
                     risk="bajo",
                     evidence="docs/plan_limpieza.md",
                 )
@@ -470,6 +592,17 @@ def _quality_report(
             after=markers_normalized,
             status="ejecutado",
             note="Marcadores claros convertidos a vacío consistente.",
+        )
+    )
+    casing_normalized = sum(int(row["filas_afectadas"]) for row in log_rows if row["regla"] == "normalizar_mayusculas")
+    report.append(
+        _report_row(
+            metrica="mayusculas_normalizadas",
+            variable="__dataset__",
+            before=casing_normalized,
+            after=casing_normalized,
+            status="ejecutado",
+            note="Celdas de texto/categóricas canonizadas a mayúsculas.",
         )
     )
     report.extend(
@@ -721,7 +854,8 @@ def _report_row(*, metrica: str, variable: str, before: Any, after: Any, status:
 
 
 def _normalized_candidate(value: str) -> str:
-    return " ".join(value.replace(NBSP, " ").strip().split())
+    normalized = _strip_invisible(unicodedata.normalize("NFC", value))
+    return " ".join(normalized.split())
 
 
 def _is_missing_like(value: str) -> bool:

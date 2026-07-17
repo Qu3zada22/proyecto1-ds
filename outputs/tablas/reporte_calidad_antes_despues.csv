@@ -22,6 +22,7 @@ faltantes,DEPARTAMENTAL,0,0,ejecutado,Conteo comparable antes/después.
 faltantes,archivo_origen,0,0,ejecutado,Conteo comparable antes/después.
 faltantes,departamento_origen,0,0,ejecutado,Conteo comparable antes/después.
 marcadores_ausencia_normalizados,__dataset__,3929,3929,ejecutado,Marcadores claros convertidos a vacío consistente.
+mayusculas_normalizadas,__dataset__,10,10,ejecutado,Celdas de texto/categóricas canonizadas a mayúsculas.
 decision_diferida,territorio,pendiente,pendiente,diferido,Validación territorial requiere catálogo oficial.
 decision_diferida,telefonos,pendiente,pendiente,manual,Teléfonos ambiguos no se corrigen automáticamente.
 decision_diferida,duplicados_parciales,pendiente,pendiente,manual,No se fusionan ni eliminan registros parciales.

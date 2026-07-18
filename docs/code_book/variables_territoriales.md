@@ -1,12 +1,13 @@
 # Code Book — Variables territoriales (sección de Iris)
 
-Esta es una sección modular del Code Book. Documenta las variables territoriales del dataset limpio `data/processed/establecimientos_diversificado_limpio.csv`. Jonathan ensambla estas secciones en el Code Book final (Markdown/PDF).
+Esta sección de Iris está completa para las **4 variables territoriales** del dataset limpio `data/processed/establecimientos_diversificado_limpio.csv`. Jonathan mantiene la integración final pendiente del Code Book de 21 variables (Markdown/PDF).
 
 **Metadatos comunes a estas variables**
 
 - **Fecha exacta de extracción:** 2026-07-14 (captura de los HTML oficiales; ver `data/raw/manifest.json`).
 - **Fuente de origen (valores base):** MINEDUC — [Busca Establecimiento](https://www.mineduc.gob.gt/BUSCAESTABLECIMIENTO_GE/).
-- **Fuente de origen (códigos oficiales):** INE, Censo 2018, vía `data/reference/catalogo_territorial.csv`.
+- **Procedencia de códigos:** `data/reference/catalogo_territorial.csv` se reproduce desde un **espejo/conversión comunitaria** fijado; la fuente primaria declarada es INE, Censo 2018. El espejo no constituye una publicación primaria oficial.
+- **Estado de revisión:** 7 parejas (145 filas) conservan `decision=revisar`; sus códigos son provisionales. Las 2 variantes tipográficas corregidas abarcan 19 filas.
 - **Versión del conjunto limpio:** v0.1.0.
 
 **Plantilla usada por variable** (para que las demás secciones del equipo calcen): descripción · tipo de dato · dominio permitido · valores posibles · tratamiento en limpieza · variable derivada · fecha de extracción · fuente · versión.
@@ -31,7 +32,7 @@ Esta es una sección modular del Code Book. Documenta las variables territoriale
 - **Tratamiento en limpieza:**
   - Canonización a mayúsculas y normalización de espacios/NBSP/invisibles.
   - Corrección trazable de 2 typos contra el catálogo oficial: `PACHALUN` → `PACHALUM` y `SAN MIGUEL PANAM` → `SAN MIGUEL PANAN` (bitácora `outputs/tablas/bitacora_limpieza.csv`).
-  - 7 nombres cortos válidos se conservan (p. ej. `NEBAJ`, oficial *Santa María Nebaj*) y quedan documentados en `outputs/tablas/inconsistencias_territoriales.csv`.
+  - 7 nombres cortos se conservan sin declararlos resueltos (p. ej. `NEBAJ`); abarcan 145 filas, usan códigos provisionales y mantienen `decision=revisar` en `outputs/tablas/inconsistencias_territoriales.csv`.
   - Validación de consistencia cruzada departamento–municipio contra el catálogo INE.
 - **Variable derivada:** No.
 
@@ -53,8 +54,8 @@ Esta es una sección modular del Code Book. Documenta las variables territoriale
 - **Tipo de dato:** Texto (código numérico conservado como texto para preservar su estructura).
 - **Dominio permitido:** Códigos oficiales INE de municipio (3 a 4 dígitos; los primeros dígitos corresponden al departamento).
 - **Valores posibles:** Códigos del catálogo oficial (rango `101`–`2217`); p. ej. `101` = Guatemala/Guatemala, `901` = Quetzaltenango/Quetzaltenango.
-- **Tratamiento en limpieza:** Asignado por unión con el catálogo INE tras reconciliar 9 casos (2 typos corregidos y 7 alias de nombre corto → oficial) y aplicar la regla `CIUDAD CAPITAL` → municipio de Guatemala.
+- **Tratamiento en limpieza:** Asignado por unión con el catálogo tras corregir 2 variantes tipográficas. Los 7 nombres cortos reciben código provisional sin cambiar el texto MINEDUC ni su estado `revisar`; también se aplica la regla `CIUDAD CAPITAL` → municipio de Guatemala.
 - **Variable derivada:** **Sí.**
   - **Método de cálculo:** normalización de la pareja (`DEPARTAMENTO`, `MUNICIPIO`) + búsqueda en el catálogo, con tabla de reconciliación documentada en `src/proyecto1_ds/enrichment.py`.
   - **Utilidad:** identifica de forma única cada municipio para análisis y uniones; robusto frente a variantes de escritura.
-  - **Cobertura:** 11,867 de 11,867 filas (100%).
+  - **Cobertura:** 11,867 de 11,867 filas (100%); 145 asignaciones son provisionales y no equivalen a validación oficial del nombre.

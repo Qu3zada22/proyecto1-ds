@@ -1,6 +1,6 @@
 metrica,variable,antes,despues,estado,nota
 filas,__dataset__,11867,11867,ejecutado,Conteo de filas preservado.
-columnas,__dataset__,20,19,ejecutado,Columna <NBSP> eliminada por estar completamente vacía.
+columnas,__dataset__,20,21,ejecutado,Columna <NBSP> eliminada y dos códigos territoriales derivados agregados.
 faltantes,'<NBSP>',11867,NA,ejecutado,Conteo comparable antes/después.
 faltantes,CODIGO,0,0,ejecutado,Conteo comparable antes/después.
 faltantes,DISTRITO,532,532,ejecutado,Conteo comparable antes/después.

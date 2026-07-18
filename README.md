@@ -17,8 +17,8 @@ El avance actual incluye:
 - fuente consolidada canónica con 11,867 establecimientos;
 - diagnóstico reproducible por variable;
 - normalización de texto y categorías (mayúsculas, caracteres invisibles/NFC y marcadores de ausencia) con bitácora;
-- catálogo territorial oficial (INE, Censo 2018) versionado y validación de consistencia departamento–municipio;
-- variables derivadas con códigos oficiales INE de departamento y municipio, más corrección trazable de 2 typos;
+- catálogo territorial reproducible desde un espejo/conversión comunitaria fijado, con INE, Censo 2018 como fuente primaria declarada;
+- variables derivadas con códigos del catálogo territorial, más corrección trazable de 2 variantes tipográficas;
 - detección de duplicados parciales por similitud (RapidFuzz), sin borrado automático;
 - comparación antes/después y reportes de trazabilidad;
 - planificación explícita del trabajo pendiente y sus responsables.
@@ -37,9 +37,10 @@ La salida limpia actual sigue siendo una **versión parcial**. Todavía no se de
 | Municipios del catálogo oficial (INE) | 340 |
 | Candidatos a duplicado parcial (para revisión) | 1,355 |
 | Inconsistencias territoriales documentadas | 7 |
+| Filas en esas parejas, con `decision=revisar` | 145 |
 | HTML oficiales preservados | 23 |
 
-El dataset limpio parte de 20 columnas, elimina la columna vacía `<NBSP>` (queda en 19) y agrega dos variables derivadas (`departamento_codigo` y `municipio_codigo`), llegando a 21. No se eliminaron establecimientos.
+El dataset limpio parte de 20 columnas, elimina la columna vacía `<NBSP>` (queda en 19) y agrega dos variables derivadas (`departamento_codigo` y `municipio_codigo`), llegando a 21. No se eliminaron establecimientos. Se corrigieron 2 variantes tipográficas en 19 filas; 7 parejas territoriales (145 filas) siguen explícitamente en revisión.
 
 ## Fuente y procedencia
 
@@ -72,8 +73,8 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 | Archivo | Contenido |
 |---|---|
 | `data/source/establecimientos_diversificado_mineduc.csv` | Fuente consolidada canónica generada desde los HTML. |
-| `data/processed/establecimientos_diversificado_limpio.csv` | Dataset limpio y enriquecido con códigos oficiales. |
-| `data/reference/catalogo_territorial.csv` | Catálogo territorial oficial (INE, Censo 2018): departamentos y municipios con códigos. |
+| `data/processed/establecimientos_diversificado_limpio.csv` | Dataset limpio y enriquecido con códigos derivados del catálogo. |
+| `data/reference/catalogo_territorial.csv` | Catálogo derivado de un espejo comunitario fijado; INE, Censo 2018 es la fuente primaria declarada. |
 | `data/raw/manifest.json` | Inventario, cobertura y checksums de las fuentes. |
 | `docs/fuentes_datos.md` | Explicación detallada de la adquisición y procedencia. |
 | `docs/diagnostico.md` | Diagnóstico inicial de calidad. |
@@ -107,7 +108,7 @@ uv run python scripts/consolidar_crudos.py
 # Regenerar el diagnóstico
 uv run python scripts/diagnosticar_crudos.py
 
-# Generar el catálogo territorial oficial (INE) — requerido por la limpieza
+# Generar el catálogo territorial reproducible — requerido por la limpieza
 uv run python scripts/generar_catalogo_territorial.py
 
 # Regenerar el dataset limpio y enriquecido (normalización + códigos INE)
@@ -130,7 +131,7 @@ La limpieza utiliza reglas deterministas y trazables:
 2. canonización a mayúsculas del texto y las categorías, preservando las tildes;
 3. conversión de marcadores inequívocos de ausencia a un vacío consistente;
 4. eliminación de la columna `<NBSP>` únicamente porque está completamente vacía;
-5. validación territorial contra el catálogo oficial y corrección trazable de 2 typos de municipio;
+5. validación territorial contra el catálogo reproducible y corrección trazable de 2 variantes tipográficas;
 6. variables derivadas `departamento_codigo` y `municipio_codigo` (códigos INE) para habilitar cruces;
 7. preservación de códigos, teléfonos y otros identificadores como texto;
 8. conservación de nombres, direcciones y valores ambiguos cuando no existe evidencia suficiente para corregirlos.
@@ -143,8 +144,8 @@ La evaluación detallada se encuentra en [`docs/planificacion.md`](docs/planific
 
 | Estado | Requisitos |
 |---|---:|
-| Completados | 16 |
-| Parciales | 10 |
+| Completados | 17 |
+| Parciales | 9 |
 | Faltantes | 3 |
 | Inciertos | 0 |
 | **Total auditado** | **29** |
@@ -155,9 +156,9 @@ Los tres faltantes son la validación automática final (7 controles), el Code B
 
 | Integrante | Responsabilidad siguiente |
 |---|---|
-| **Anggie** | Reconciliación de fuentes, candidatos a duplicados parciales, excepciones telefónicas, bitácora y sección de procedencia del Code Book. |
-| **Iris** | Hecho: catálogo territorial INE versionado, consistencia departamento–municipio, dominios, normalización de texto/categorías, códigos oficiales y detección de duplicados. Sigue: documentar sus variables (incl. derivadas) en el Code Book. |
-| **Jonathan** | Integración, validación final, reporte completo, documentación del flujo, Code Book Markdown/PDF y auditoría de entrega. |
+| **Anggie** | Pendiente/no implementado: decisiones sobre duplicados parciales, excepciones telefónicas y su sección del Code Book. |
+| **Iris** | Hecho: catálogo reproducible, consistencia departamento–municipio, normalización, códigos derivados y Code Book territorial de 4 variables. |
+| **Jonathan** | Integración final pendiente: validación, reporte completo, ensamblaje del Code Book Markdown/PDF y auditoría. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book.
 
@@ -170,7 +171,7 @@ Cada integrante debe aportar commits identificables y una sección concreta del 
 - construir el Code Book de las 21 variables y exportarlo a PDF;
 - realizar la auditoría final de entrega y contribuciones del equipo.
 
-Ya está hecho: catálogo territorial oficial, normalización de texto/categorías, validación departamento–municipio, códigos oficiales INE como variables derivadas y detección de duplicados parciales.
+Ya está hecho en el alcance de Iris: catálogo territorial reproducible, normalización, validación departamento–municipio, códigos derivados y documentación de 4 variables. El espejo no es una publicación primaria oficial; INE, Censo 2018 es la fuente primaria declarada.
 
 ## Alcance de esta entrega parcial
 

@@ -76,3 +76,7 @@ Como no hubo CSV directo disponible, se preservó el contenido fuente legítimo 
 ## Siguiente paso manual
 
 Si el curso exige estrictamente CSV descargado desde el sitio, el siguiente paso es validar manualmente en navegador el flujo del botón `Exportar a Excel` y capturar qué campos WebForms (`__VIEWSTATE`, `__EVENTVALIDATION`, evento y coordenadas del botón) requiere. El pipeline actual ya puede consolidar los HTML oficiales preservados hacia `data/source/establecimientos_diversificado_mineduc.csv` mediante código reproducible, dejando claro que el origen crudo fue HTML y no un CSV descargado.
+
+## Referencia territorial
+
+`data/reference/catalogo_territorial.csv` se genera desde un **espejo/conversión comunitaria** fijado a una revisión y SHA-256. La fuente primaria declarada por ese espejo es INE, Censo 2018; el archivo comunitario no es una descarga primaria oficial del INE. El generador valida esquema, unicidad, 22 departamentos y 340 municipios antes del reemplazo atómico.

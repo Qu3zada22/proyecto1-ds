@@ -14,4 +14,4 @@ DIRECTOR,normalizar_espacios_nbsp,1082,"Normalización conservadora de NBSP, bor
 DIRECTOR,normalizar_marcador_ausencia,1830,Marcadores inequívocos de ausencia convertidos a vacío consistente.,bajo,docs/plan_limpieza.md
 MUNICIPIO,corregir_municipio_catalogo,18,Nombre inválido corregido al oficial 'PACHALUM' según catálogo INE.,bajo,data/reference/catalogo_territorial.csv; outputs/tablas/inconsistencias_territoriales.csv
 MUNICIPIO,corregir_municipio_catalogo,1,Nombre inválido corregido al oficial 'SAN MIGUEL PANAN' según catálogo INE.,bajo,data/reference/catalogo_territorial.csv; outputs/tablas/inconsistencias_territoriales.csv
-"departamento_codigo, municipio_codigo",agregar_codigos_oficiales,11867,Variables derivadas: códigos oficiales INE para habilitar cruces con otras fuentes.,bajo,data/reference/catalogo_territorial.csv; outputs/tablas/inconsistencias_territoriales.csv
+"departamento_codigo, municipio_codigo",agregar_codigos_catalogo,11867,Códigos derivados del catálogo; 145 asignaciones usan aliases provisionales pendientes.,medio,data/reference/catalogo_territorial.csv; outputs/tablas/inconsistencias_territoriales.csv

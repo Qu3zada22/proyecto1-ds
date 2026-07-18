@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         catalog_csv = _resolve_under(args.catalog_csv, ROOT / "data/reference", "--catalog-csv")
         tables_dir = _resolve_under(args.tables_dir, ROOT / "outputs/tablas", "--tables-dir")
         reports_dir = _resolve_under(args.reports_dir, ROOT / "outputs/reportes", "--reports-dir")
-        report = validate_territorial(source_csv, catalog_csv=catalog_csv)
+        report = validate_territorial(source_csv, catalog_csv=catalog_csv, project_root=ROOT)
         outputs = write_territorial_outputs(report, tables_dir=tables_dir, reports_dir=reports_dir)
     except (TerritorialCliError, TerritorialError, OSError, csv.Error) as exc:
         print(f"Error de validación territorial: {exc}", file=sys.stderr)

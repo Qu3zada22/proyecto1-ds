@@ -46,7 +46,7 @@ def test_limpia_nbsp_ausencias_y_preserva_identificadores_como_texto(tmp_path):
             "CODIGO": "001",
             "DISTRITO": "01-403",
             "TELEFONO": "2251 2759",
-            "ESTABLECIMIENTO": "Instituto Central",
+            "ESTABLECIMIENTO": "INSTITUTO CENTRAL",
             "DIRECTOR": "",
             "archivo_origen": "raw.csv",
         },
@@ -54,8 +54,8 @@ def test_limpia_nbsp_ausencias_y_preserva_identificadores_como_texto(tmp_path):
             "CODIGO": "002",
             "DISTRITO": "",
             "TELEFONO": "",
-            "ESTABLECIMIENTO": "Colegio San José",
-            "DIRECTOR": "Ana Pérez",
+            "ESTABLECIMIENTO": "COLEGIO SAN JOSÉ",
+            "DIRECTOR": "ANA PÉREZ",
             "archivo_origen": "raw.csv",
         },
     ]
@@ -67,6 +67,30 @@ def test_limpia_nbsp_ausencias_y_preserva_identificadores_como_texto(tmp_path):
         "riesgo": "bajo",
         "evidencia_fuente": "docs/plan_limpieza.md; outputs/tablas/diagnostico_columnas.csv",
     } in result.cleaning_log
+
+
+def test_normaliza_establecimiento_y_director_a_mayusculas_y_registra_la_regla(tmp_path):
+    source_csv = tmp_path / "mixed_case.csv"
+    _write_csv(
+        source_csv,
+        ["ESTABLECIMIENTO", "DIRECTOR"],
+        [["Instituto Mixto Álvaro Arzú", "Ana Lucía Pérez"]],
+    )
+
+    result = clean_dataset(source_csv)
+
+    assert result.rows == [
+        {
+            "ESTABLECIMIENTO": "INSTITUTO MIXTO ÁLVARO ARZÚ",
+            "DIRECTOR": "ANA LUCÍA PÉREZ",
+        }
+    ]
+    uppercase_log = {
+        row["variable"]: row["filas_afectadas"]
+        for row in result.cleaning_log
+        if row["regla"] == "normalizar_mayusculas"
+    }
+    assert uppercase_log == {"ESTABLECIMIENTO": "1", "DIRECTOR": "1"}
 
 
 def test_conserva_columna_nbsp_con_contenido_y_reporta_decision_no_segura(tmp_path):
@@ -192,7 +216,45 @@ def test_write_cleaning_outputs_ignora_temporal_predecible_preexistente_como_sym
     assert redirected_target.read_text(encoding="utf-8") == "outside sentinel\n"
     assert predictable_temp_symlink.is_symlink()
     assert not clean_csv.is_symlink()
-    assert clean_csv.read_text(encoding="utf-8") == "CODIGO,DIRECTOR\n001,Ana\n"
+    assert clean_csv.read_text(encoding="utf-8") == "CODIGO,DIRECTOR\n001,ANA\n"
+
+
+def test_capacidad_dir_fd_permanece_detectable_al_sustituir_os_open(monkeypatch):
+    if not cleaning._secure_fd_writes_supported():
+        pytest.skip("la plataforma no ofrece la rama segura con dir_fd")
+    original_open = cleaning.os.open
+
+    def substituted_open(path, flags, mode=0o777, *, dir_fd=None):
+        return original_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(cleaning.os, "open", substituted_open)
+
+    assert cleaning._secure_fd_writes_supported()
+
+
+def test_write_cleaning_outputs_usa_rama_portatil_sin_capacidad_dir_fd(tmp_path, monkeypatch):
+    source_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
+    _write_csv(source_csv, ["CODIGO", "DIRECTOR"], [["001", "Ana Pérez"]])
+    clean_csv = tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv"
+    tables_dir = tmp_path / "outputs" / "tablas"
+
+    monkeypatch.setattr(cleaning, "_OS_OPEN_SUPPORTS_DIR_FD", False)
+    monkeypatch.setattr(
+        cleaning,
+        "_write_outputs_atomically",
+        lambda _plans: pytest.fail("la rama segura no debe ejecutarse sin capacidad dir_fd"),
+    )
+
+    write_cleaning_outputs(
+        clean_dataset(source_csv),
+        clean_csv_path=clean_csv,
+        tables_dir=tables_dir,
+        project_root=tmp_path,
+    )
+
+    assert clean_csv.read_text(encoding="utf-8") == "CODIGO,DIRECTOR\n001,ANA PÉREZ\n"
+    assert (tables_dir / "bitacora_limpieza.csv").is_file()
+    assert (tables_dir / "reporte_calidad_antes_despues.csv").is_file()
 
 
 def test_write_cleaning_outputs_rechaza_temporal_intercambiado_por_symlink_sin_redirigir(tmp_path, monkeypatch):

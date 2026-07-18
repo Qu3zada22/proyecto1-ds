@@ -37,6 +37,7 @@ UPPERCASE_TEXT_COLUMNS = {
 _WHITESPACE_CONTROLS = {"\t", "\n", "\r", "\f", "\v"}
 LOG_FIELDS = ["variable", "regla", "filas_afectadas", "justificacion", "riesgo", "evidencia_fuente"]
 REPORT_FIELDS = ["metrica", "variable", "antes", "despues", "estado", "nota"]
+_OS_OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
 
 
 class CleaningCsvError(ValueError):
@@ -146,7 +147,7 @@ def write_cleaning_outputs(
 
 
 def _secure_fd_writes_supported() -> bool:
-    return hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW") and os.open in os.supports_dir_fd
+    return hasattr(os, "O_DIRECTORY") and hasattr(os, "O_NOFOLLOW") and _OS_OPEN_SUPPORTS_DIR_FD
 
 
 def _write_outputs_portably(output_specs: list[tuple[Path, Callable[[TextIO], None]]]) -> None:

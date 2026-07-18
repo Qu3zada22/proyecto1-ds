@@ -23,7 +23,7 @@ uv run python scripts/consolidar_crudos.py
 # Regenerar diagnóstico
 uv run python scripts/diagnosticar_crudos.py
 
-# Generar el catálogo territorial oficial INE (requerido por la limpieza)
+# Generar el catálogo territorial reproducible (requerido por la limpieza)
 uv run python scripts/generar_catalogo_territorial.py
 
 # Regenerar dataset limpio y enriquecido (normalización + códigos INE)
@@ -57,7 +57,8 @@ Datos de referencia vigentes:
 
 - Fuente canónica: 11,867 filas, 20 columnas y 11,867 códigos únicos.
 - Dataset limpio actual: 11,867 filas y 21 columnas (incluye `departamento_codigo` y `municipio_codigo`).
-- Catálogo territorial: `data/reference/catalogo_territorial.csv` (INE, Censo 2018; 22 departamentos, 340 municipios).
+- Catálogo territorial: `data/reference/catalogo_territorial.csv` (22 departamentos, 340 municipios), derivado de un espejo/conversión comunitaria fijado; INE, Censo 2018 es la fuente primaria declarada, no el espejo.
+- Territorio pendiente: 7 parejas/145 filas conservan `decision=revisar`; 2 variantes tipográficas abarcan 19 filas.
 - Los 23 HTML y el manifest deben permanecer disponibles para reconstrucción y auditoría.
 
 ## Estructura principal
@@ -107,9 +108,9 @@ Datos de referencia vigentes:
 
 | Responsable | Próximos entregables |
 |---|---|
-| Anggie | Reconciliación reproducible, candidatos a duplicados parciales, excepciones telefónicas, bitácora y sección de procedencia del Code Book. |
-| Iris | Hecho: catálogo territorial INE, consistencia departamento–municipio, dominios, normalización de texto/categorías, códigos oficiales y detección de duplicados. Pendiente: documentar variables (incl. derivadas) en el Code Book. |
-| Jonathan | Integración, validación final, reporte completo, README, ensamblaje del Code Book Markdown/PDF y auditoría de entrega. |
+| Anggie | Pendiente/no implementado: decisiones de duplicados parciales, excepciones telefónicas y su sección del Code Book. |
+| Iris | Hecho: catálogo reproducible, consistencia territorial, normalización, códigos derivados y Code Book territorial de 4 variables. |
+| Jonathan | Integración final pendiente: validación, reporte completo, README, ensamblaje del Code Book Markdown/PDF y auditoría. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book. Los entregables futuros continúan como **planificados/no implementados** hasta que exista evidencia de aceptación.
 

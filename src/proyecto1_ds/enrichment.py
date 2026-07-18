@@ -18,6 +18,7 @@ MUN_CODE_COLUMN = "municipio_codigo"
 CIUDAD_CAPITAL = "CIUDAD CAPITAL"
 CIUDAD_CAPITAL_TARGET = ("GUATEMALA", "GUATEMALA")
 CATALOG_EVIDENCE = "data/reference/catalogo_territorial.csv; outputs/tablas/inconsistencias_territoriales.csv"
+CATALOG_FIELDS = ("departamento_codigo", "departamento", "municipio_codigo", "municipio")
 # (departamento, municipio MINEDUC normalizados) -> (departamento, municipio oficiales, corrección de nombre|None).
 # Curado con la evidencia de outputs/tablas/inconsistencias_territoriales.csv (INE, Censo 2018).
 TERRITORIAL_ALIASES: dict[tuple[str, str], tuple[str, str, str | None]] = {
@@ -41,21 +42,27 @@ def enrich_result(result: CleaningResult, *, catalog_csv: Path | str = DEFAULT_C
     """Agrega códigos oficiales de departamento y municipio y corrige typos con evidencia."""
 
     department_codes, municipality_codes = _load_catalog_codes(Path(catalog_csv))
+    missing_pairs: set[tuple[str, str]] = set()
+    for row in result.rows:
+        department = _normalize(row.get(DEPARTMENT_COLUMN, ""))
+        municipality = _normalize(row.get(MUNICIPALITY_COLUMN, ""))
+        official_department, official_municipality, _correction = _catalog_target(department, municipality)
+        if official_department not in department_codes or (official_department, official_municipality) not in municipality_codes:
+            missing_pairs.add((department, municipality))
+    if missing_pairs:
+        sample = ", ".join(f"{department}/{municipality}" for department, municipality in sorted(missing_pairs)[:3])
+        raise EnrichmentError(f"Catálogo territorial incompleto para la fuente: {sample}.")
     header = _insert_after(result.header, MUNICIPALITY_COLUMN, [DEP_CODE_COLUMN, MUN_CODE_COLUMN])
 
     new_rows: list[dict[str, str]] = []
     typo_fixes: Counter[tuple[str, str]] = Counter()
     resolved = 0
+    provisional = 0
     for row in result.rows:
         norm_department = _normalize(row.get(DEPARTMENT_COLUMN, ""))
         norm_municipality = _normalize(row.get(MUNICIPALITY_COLUMN, ""))
-        correction: str | None = None
-        if norm_department == CIUDAD_CAPITAL:
-            official_department, official_municipality = CIUDAD_CAPITAL_TARGET
-        elif (norm_department, norm_municipality) in TERRITORIAL_ALIASES:
-            official_department, official_municipality, correction = TERRITORIAL_ALIASES[(norm_department, norm_municipality)]
-        else:
-            official_department, official_municipality = norm_department, norm_municipality
+        official_department, official_municipality, correction = _catalog_target(norm_department, norm_municipality)
+        provisional += (norm_department, norm_municipality) in TERRITORIAL_ALIASES and correction is None
 
         new_row = dict(row)
         if correction is not None and new_row.get(MUNICIPALITY_COLUMN, "") != correction:
@@ -85,15 +92,20 @@ def enrich_result(result: CleaningResult, *, catalog_csv: Path | str = DEFAULT_C
     cleaning_log.append(
         {
             "variable": f"{DEP_CODE_COLUMN}, {MUN_CODE_COLUMN}",
-            "regla": "agregar_codigos_oficiales",
+            "regla": "agregar_codigos_catalogo",
             "filas_afectadas": str(resolved),
-            "justificacion": "Variables derivadas: códigos oficiales INE para habilitar cruces con otras fuentes.",
-            "riesgo": "bajo",
+            "justificacion": f"Códigos derivados del catálogo; {provisional} asignaciones usan aliases provisionales pendientes.",
+            "riesgo": "medio",
             "evidencia_fuente": CATALOG_EVIDENCE,
         }
     )
 
     quality_report = list(result.quality_report)
+    for metric in quality_report:
+        if metric["metrica"] == "columnas" and metric["variable"] == "__dataset__":
+            metric["despues"] = str(len(header))
+            metric["nota"] = "Columna <NBSP> eliminada y dos códigos territoriales derivados agregados."
+            break
     quality_report.append(
         {
             "metrica": "codigos_territoriales_asignados",
@@ -137,21 +149,44 @@ def _load_catalog_codes(path: Path) -> tuple[dict[str, str], dict[tuple[str, str
     municipality_codes: dict[tuple[str, str], str] = {}
     try:
         with path.open(newline="", encoding="utf-8") as csv_file:
-            reader = csv.DictReader(csv_file)
-            if reader.fieldnames is None:
-                raise EnrichmentError(f"Catálogo territorial vacío: {path}.")
+            reader = csv.DictReader(csv_file, strict=True)
+            if tuple(reader.fieldnames or ()) != CATALOG_FIELDS:
+                raise EnrichmentError(f"Catálogo territorial con esquema inválido: {path}.")
+            department_codes_by_name: dict[str, set[str]] = {}
+            department_names_by_code: dict[str, set[str]] = {}
+            municipality_keys: list[tuple[str, str]] = []
+            municipality_code_values: list[str] = []
             for row in reader:
-                norm_department = _normalize(row.get("departamento", ""))
-                norm_municipality = _normalize(row.get("municipio", ""))
-                department_codes.setdefault(norm_department, row.get("departamento_codigo", ""))
-                municipality_codes[(norm_department, norm_municipality)] = row.get("municipio_codigo", "")
+                values = [row.get(field) for field in CATALOG_FIELDS]
+                if any(not isinstance(value, str) or not value.strip() for value in values):
+                    raise EnrichmentError(f"Catálogo territorial contiene códigos o nombres vacíos: {path}.")
+                department_code, department, municipality_code, municipality = (value.strip() for value in values)
+                norm_department, norm_municipality = _normalize(department), _normalize(municipality)
+                department_codes_by_name.setdefault(norm_department, set()).add(department_code)
+                department_names_by_code.setdefault(department_code, set()).add(norm_department)
+                municipality_keys.append((norm_department, norm_municipality))
+                municipality_code_values.append(municipality_code)
+                department_codes.setdefault(norm_department, department_code)
+                municipality_codes[(norm_department, norm_municipality)] = municipality_code
+            if not municipality_keys:
+                raise EnrichmentError(f"Catálogo territorial sin registros: {path}.")
+            if any(len(values) != 1 for values in (*department_codes_by_name.values(), *department_names_by_code.values())):
+                raise EnrichmentError(f"Catálogo territorial contiene departamentos ambiguos: {path}.")
+            if len(set(municipality_keys)) != len(municipality_keys) or len(set(municipality_code_values)) != len(municipality_code_values):
+                raise EnrichmentError(f"Catálogo territorial contiene municipios o códigos duplicados: {path}.")
     except FileNotFoundError as exc:
         raise EnrichmentError(
             f"No existe el catálogo territorial: {path}. Genera primero con scripts/generar_catalogo_territorial.py."
         ) from exc
-    except csv.Error as exc:
+    except (csv.Error, TypeError, ValueError) as exc:
         raise EnrichmentError(f"Catálogo territorial malformado: {path}: {exc}") from exc
     return department_codes, municipality_codes
+
+
+def _catalog_target(department: str, municipality: str) -> tuple[str, str, str | None]:
+    if department == CIUDAD_CAPITAL:
+        return *CIUDAD_CAPITAL_TARGET, None
+    return TERRITORIAL_ALIASES.get((department, municipality), (department, municipality, None))
 
 
 def _normalize(value: str) -> str:

@@ -4,7 +4,7 @@
 
 Este documento corresponde al **Paso 3: Elaboración del Plan de Limpieza** de `docs/instrucciones.md`. Su propósito es convertir el diagnóstico de datos crudos en reglas propuestas por variable antes de modificar cualquier dato.
 
-Este plan es **solo planificación** (Paso 3): no ejecuta limpieza por sí mismo. La ejecución de estas reglas y las siguientes ya vive en el pipeline (`src/proyecto1_ds/`) y su evidencia en `outputs/`: normalización de texto/mayúsculas y bitácora, validación territorial contra catálogo INE, códigos oficiales como variables derivadas y detección de duplicados parciales. El Code Book final y el reporte narrativo antes/después siguen pendientes.
+Este plan es **solo planificación** (Paso 3): no ejecuta limpieza por sí mismo. La ejecución posterior ya vive en el pipeline (`src/proyecto1_ds/`): normalización y bitácora; catálogo desde un espejo/conversión comunitaria fijado (INE, Censo 2018 como fuente primaria declarada); 2 variantes tipográficas/19 filas corregidas; y 7 parejas/145 filas con `decision=revisar`. Las decisiones de Anggie siguen pendiente/no implementado y la integración final pendiente corresponde a Jonathan.
 
 El dataset diagnosticado contiene 11,867 filas, 20 columnas y 0 duplicados exactos reportados. El diagnóstico identifica 18 problemas potenciales, incluyendo una columna con encabezado no separable (`<NBSP>`), faltantes, texto sospechoso, formatos telefónicos sospechosos, dominios territoriales no verificables y duplicados parciales diferidos.
 
@@ -69,7 +69,7 @@ Cada fila de `outputs/tablas/problemas_potenciales.csv` queda cubierta por la ta
 
 ## Decisiones diferidas y revisión manual
 
-- **Catálogo territorial**: `DEPARTAMENTO`, `MUNICIPIO` y `departamento_origen` quedan diferidos hasta obtener catálogo oficial y reglas de consistencia cruzada.
+- **Territorio**: la limitación “catálogo no verificable” describe el diagnóstico inicial. La fase posterior usa un catálogo reproducible, pero conserva 7 parejas/145 filas para revisión humana y no presenta el espejo comunitario como fuente primaria oficial.
 - **Duplicados parciales**: quedan en revisión manual; no se fusionan ni eliminan automáticamente.
 - **Teléfonos ambiguos**: se revisarán manualmente cuando contengan extensiones, varios números, separadores o texto auxiliar.
 - **Texto semántico libre**: `ESTABLECIMIENTO`, `DIRECCION`, `SUPERVISOR` y `DIRECTOR` solo admiten normalización conservadora de espacios; cualquier unificación, recorte o edición semántica requiere revisión humana.

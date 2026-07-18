@@ -63,6 +63,7 @@ def validate_territorial(
     source_csv: Path | str = DEFAULT_CLEAN_CSV,
     *,
     catalog_csv: Path | str = DEFAULT_CATALOG_CSV,
+    project_root: Path | str = Path.cwd(),
 ) -> TerritorialReport:
     """Compara cada pareja departamento-municipio contra el catálogo oficial."""
 
@@ -98,8 +99,10 @@ def validate_territorial(
         )
 
     inconsistencies.sort(key=lambda item: (-item["filas"], item["departamento"], item["municipio"]))
+    logical_source = _logical_path(source_path, Path(project_root))
+    logical_catalog = _logical_path(catalog_path, Path(project_root))
     summary = {
-        "catalogo": catalog_path.as_posix(),
+        "catalogo": logical_catalog.as_posix(),
         "parejas_distintas": len(pair_counts),
         "parejas_validas": valid_pairs,
         "parejas_regla_ciudad_capital": special_pairs,
@@ -108,8 +111,8 @@ def validate_territorial(
         "decision_por_defecto": "revisar (sin corrección automática)",
     }
     return TerritorialReport(
-        source_path=source_path,
-        catalog_path=catalog_path,
+        source_path=logical_source,
+        catalog_path=logical_catalog,
         inconsistencies=inconsistencies,
         summary=summary,
     )
@@ -128,8 +131,9 @@ def write_territorial_outputs(
 
     inconsistencies_path = tables_root / "inconsistencias_territoriales.csv"
     report_path = reports_root / "validacion_territorial.md"
-    _write_rows(inconsistencies_path, INCONSISTENCY_FIELDS, report.inconsistencies)
-    report_path.write_text(_render_markdown(report), encoding="utf-8")
+    csv_bytes = _rows_bytes(INCONSISTENCY_FIELDS, report.inconsistencies)
+    markdown_bytes = _render_markdown(report).encode()
+    _replace_pair({inconsistencies_path: csv_bytes, report_path: markdown_bytes})
     return TerritorialOutputs(inconsistencies_path=inconsistencies_path, report_path=report_path)
 
 
@@ -223,18 +227,41 @@ def _normalize(value: str) -> str:
     return " ".join(stripped.upper().split())
 
 
-def _write_rows(path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
-    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+def _logical_path(path: Path, project_root: Path) -> Path:
     try:
-        with temp_path.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
-            csv_file.flush()
-        temp_path.replace(path)
+        return path.resolve().relative_to(project_root.resolve())
+    except ValueError:
+        return Path(path.name)
+
+
+def _rows_bytes(fieldnames: list[str], rows: list[dict[str, Any]]) -> bytes:
+    from io import StringIO
+
+    buffer = StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return buffer.getvalue().encode()
+
+
+def _replace_pair(contents: dict[Path, bytes]) -> None:
+    previous = {path: path.read_bytes() if path.exists() else None for path in contents}
+    staged = {path: path.with_name(f".{path.name}.{os.getpid()}.tmp") for path in contents}
+    try:
+        for path, content in contents.items():
+            staged[path].write_bytes(content)
+        for path in contents:
+            staged[path].replace(path)
+    except OSError:
+        for path, content in previous.items():
+            if content is None:
+                path.unlink(missing_ok=True)
+            else:
+                path.write_bytes(content)
+        raise
     finally:
-        if temp_path.exists():
-            temp_path.unlink()
+        for temp_path in staged.values():
+            temp_path.unlink(missing_ok=True)
 
 
 def _render_markdown(report: TerritorialReport) -> str:
@@ -242,8 +269,9 @@ def _render_markdown(report: TerritorialReport) -> str:
     lines = [
         "# Validación territorial (departamento–municipio)",
         "",
-        f"Generado por código sobre `{report.source_path.as_posix()}` contra el catálogo oficial "
-        f"`{report.catalog_path.as_posix()}` (INE, Censo 2018).",
+        f"Generado por código sobre `{report.source_path.as_posix()}` contra el "
+        f"espejo/conversión comunitaria `{report.catalog_path.as_posix()}` "
+        "(fuente primaria declarada: INE, Censo 2018).",
         "",
         "## Método",
         "",

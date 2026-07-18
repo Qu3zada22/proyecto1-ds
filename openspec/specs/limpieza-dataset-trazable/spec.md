@@ -75,6 +75,9 @@ El sistema MUST emitir `outputs/tablas/bitacora_limpieza.csv` con, como mínimo,
 
 El sistema MUST emitir `outputs/tablas/reporte_calidad_antes_despues.csv` con métricas comparables antes y después, incluyendo filas, columnas, faltantes por variable, columna `<NBSP>`, marcadores de ausencia normalizados y decisiones diferidas.
 
+El reporte MUST comparar filas, columnas, faltantes, `<NBSP>`, ausencias y decisiones; MUST registrar 11,867 filas, 20→21 columnas y métricas territoriales.
+(Anteriormente: no fijaba 20→21 ni métricas territoriales.)
+
 #### Escenario: comparación generada
 
 - DADO una limpieza completada

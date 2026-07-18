@@ -1,6 +1,6 @@
 # Validación territorial (departamento–municipio)
 
-Generado por código sobre `C:/Users/irisa/Documents/Trabajos_UVG/Semestre 8/DataScience/Proyecto1-ds/data/processed/establecimientos_diversificado_limpio.csv` contra el catálogo oficial `C:/Users/irisa/Documents/Trabajos_UVG/Semestre 8/DataScience/Proyecto1-ds/data/reference/catalogo_territorial.csv` (INE, Censo 2018).
+Generado por código sobre `data/processed/establecimientos_diversificado_limpio.csv` contra el espejo/conversión comunitaria `data/reference/catalogo_territorial.csv` (fuente primaria declarada: INE, Censo 2018).
 
 ## Método
 

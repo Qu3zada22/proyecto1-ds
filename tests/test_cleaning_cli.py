@@ -2,6 +2,8 @@ import csv
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 from proyecto1_ds.cleaning import DEFAULT_SOURCE_CSV, CleaningOutputError
 
 
@@ -31,13 +33,23 @@ def _write_interim_csv(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as csv_file:
         writer = csv.writer(csv_file)
-        writer.writerow(["CODIGO", "DIRECTOR", "\xa0"])
-        writer.writerow(["001", " SIN DATO ", ""])
+        writer.writerow(["CODIGO", "DIRECTOR", "DEPARTAMENTO", "MUNICIPIO", "\xa0"])
+        writer.writerow(["001", " SIN DATO ", "GUATEMALA", "GUATEMALA", ""])
+
+
+def _write_valid_catalog(root: Path) -> None:
+    catalog = root / "data" / "reference" / "catalogo_territorial.csv"
+    catalog.parent.mkdir(parents=True, exist_ok=True)
+    with catalog.open("w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["departamento_codigo", "departamento", "municipio_codigo", "municipio"])
+        writer.writerow(["1", "Guatemala", "101", "Guatemala"])
 
 
 def test_cli_limpia_fuente_default_y_escribe_salidas_permitidas(tmp_path, capsys):
     interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
+    _write_valid_catalog(tmp_path)
     original_interim = interim_csv.read_bytes()
     cli = _load_cli_module()
     cli.ROOT = tmp_path
@@ -69,6 +81,69 @@ def test_cli_reporta_entrada_ausente_sin_traceback_ni_parciales(tmp_path, capsys
     assert "Traceback" not in captured.err
     assert not (tmp_path / "data" / "processed").exists()
     assert not (tmp_path / "outputs" / "tablas").exists()
+
+
+def test_cli_reporta_catalogo_ausente_con_fuente_valida_sin_escribir_parciales(tmp_path, capsys):
+    interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
+    _write_interim_csv(interim_csv)
+    original_interim = interim_csv.read_bytes()
+    cli = _load_cli_module()
+    cli.ROOT = tmp_path
+
+    exit_code = cli.main([])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert captured.out == ""
+    assert "catálogo territorial" in captured.err
+    assert "Traceback" not in captured.err
+    assert interim_csv.read_bytes() == original_interim
+    assert not (tmp_path / "data" / "processed").exists()
+    assert not (tmp_path / "outputs" / "tablas").exists()
+
+
+@pytest.mark.parametrize(
+    "catalog_rows",
+    [
+        [["departamento_codigo", "departamento", "municipio_codigo", "municipio"]],
+        [["departamento", "municipio"], ["Guatemala", "Guatemala"]],
+        [["departamento_codigo", "departamento", "municipio_codigo", "municipio"],
+         ["2", "El Progreso", "201", "Guastatoya"]],
+        [["departamento_codigo", "departamento", "municipio_codigo", "municipio"], ["", "Guatemala", "101", "Guatemala"]],
+        [["departamento_codigo", "departamento", "municipio_codigo", "municipio"],
+         ["1", "Guatemala", "101", "Guatemala"], ["2", "El Progreso", "101", "Guastatoya"]],
+        [["departamento_codigo", "departamento", "municipio_codigo", "municipio"],
+         ["1", "Guatemala", "101", "Guatemala"], ["2", "Guatemala", "102", "Mixco"]],
+    ],
+    ids=["solo-encabezado", "esquema-invalido", "cobertura-incompleta", "codigo-vacio", "codigo-duplicado", "departamento-ambiguo"],
+)
+def test_cli_rechaza_catalogo_invalido_sin_alterar_fuente_ni_salidas(tmp_path, capsys, catalog_rows):
+    source = tmp_path / "data/source/establecimientos_diversificado_mineduc.csv"
+    _write_interim_csv(source)
+    catalog = tmp_path / "data/reference/catalogo_territorial.csv"
+    catalog.parent.mkdir(parents=True)
+    with catalog.open("w", newline="", encoding="utf-8") as csv_file:
+        csv.writer(csv_file).writerows(catalog_rows)
+    outputs = [
+        tmp_path / "data/processed/establecimientos_diversificado_limpio.csv",
+        tmp_path / "outputs/tablas/bitacora_limpieza.csv",
+        tmp_path / "outputs/tablas/reporte_calidad_antes_despues.csv",
+    ]
+    for output in outputs:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_bytes(b"salida previa\n")
+    source_before = source.read_bytes()
+    cli = _load_cli_module()
+    cli.ROOT = tmp_path
+
+    assert cli.main([]) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "catálogo territorial" in captured.err.lower()
+    assert "Traceback" not in captured.err
+    assert source.read_bytes() == source_before
+    assert [output.read_bytes() for output in outputs] == [b"salida previa\n"] * 3
 
 
 def test_cli_restringe_entrada_a_data_source_y_salidas_a_raices_permitidas(tmp_path, capsys):
@@ -186,6 +261,7 @@ def test_cli_rechaza_directorio_existente_como_archivo_de_salida_sin_mutarlo(tmp
 def test_cli_permite_archivo_csv_valido_bajo_data_processed(tmp_path, capsys):
     interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
+    _write_valid_catalog(tmp_path)
     clean_csv = tmp_path / "data" / "processed" / "custom_clean.csv"
     cli = _load_cli_module()
     cli.ROOT = tmp_path
@@ -204,6 +280,7 @@ def test_cli_permite_archivo_csv_valido_bajo_data_processed(tmp_path, capsys):
 def test_cli_reporta_error_de_escritura_sin_traceback(tmp_path, capsys, monkeypatch):
     interim_csv = tmp_path / "data" / "source" / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(interim_csv)
+    _write_valid_catalog(tmp_path)
     cli = _load_cli_module()
     cli.ROOT = tmp_path
 

@@ -38,6 +38,9 @@ El cierre de `anggie-csv-reconciliation` MUST preservar ruta, hash, parser y med
 
 `docs/planificacion.md` MUST cubrir cada requisito de `docs/instrucciones.md` con estado, evidencia, dependencias, aceptación y responsable. MUST asignar: Anggie, reconciliación/métricas y procedencia del Code Book; Iris, catálogo/consistencia territorial y dominios del Code Book; Jonathan, migración/guards/validación y ensamblaje Markdown/PDF del Code Book. Cada aporte MUST ser identificable en el repositorio.
 
+El plan MUST cubrir cada requisito con estado, evidencia, dependencias, aceptación, responsable y asignaciones vigentes. MUST reflejar catálogo, consistencia, dominios y variables de Iris con pendientes abiertos. Code Book territorial, `README.md` y `AGENTS.md` MUST coincidir y MUST NOT declarar cierre.
+(Anteriormente: no exigía evidencia territorial actual ni evitaba cierres prematuros.)
+
 #### Scenario: cobertura completa
 - DADO los requisitos del curso
 - CUANDO se valida el plan
@@ -47,6 +50,25 @@ El cierre de `anggie-csv-reconciliation` MUST preservar ruta, hash, parser y med
 - DADO un integrante sin ambos aportes
 - CUANDO se valida
 - ENTONCES falla e identifica el faltante.
+
+#### Scenario: documentación veraz
+- DADO resultados verificados
+- CUANDO se documentan
+- ENTONCES declara 21 columnas, origen, provisionalidad y 7 pendientes.
+
+### Requirement: No mutación fuera de alcance
+
+El cambio MUST NOT modificar artefactos Anggie de duplicados, teléfonos, reconciliación o Code Book, ni `README.pdf`, crudos o fuentes.
+
+#### Scenario: protección comprobada
+- DADO artefactos protegidos
+- CUANDO se regeneran entregables de Iris
+- ENTONCES sus bytes permanecen idénticos.
+
+#### Scenario: intento prohibido
+- DADO una operación fuera de alcance
+- CUANDO se solicita
+- ENTONCES falla antes de mutar datos.
 
 ### Requirement: Integridad de referencias y recuperación
 

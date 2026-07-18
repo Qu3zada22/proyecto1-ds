@@ -1,3 +1,4 @@
+import csv
 import hashlib
 import subprocess
 from pathlib import Path
@@ -111,19 +112,47 @@ def test_estado_final_elimina_allowlist_rastreada_y_preserva_protegidos():
     protected_hashes = {
         "data/raw/manifest.json": "8b72e90ff85e0d646f15dcff88cf32f0cbb11bc8d605582cd7d2e46efa5f7e07",
         "data/source/establecimientos_diversificado_mineduc.csv": "c83ac119326279b67acbbca5c9d1cada6877bb56526c76c1461fdc9b3bded82f",
-        "data/processed/establecimientos_diversificado_limpio.csv": "5de3d05752f38f249180e08f46369e7d6225a5b8acc7c77535b40a4ffac78c03",
-        "outputs/tablas/bitacora_limpieza.csv": "8a7faadf69fb15531d62d4bf1ae08e35c9382ce6c27c005d75960e078f06fe34",
+        "data/reference/catalogo_territorial.csv": "64b86ba51f813d0ce6806a3a948af34e5d5a5ad8425ed62f0e0e1d72a53387f2",
+        "data/processed/establecimientos_diversificado_limpio.csv": "32414cc3bf68744923ef8d51758e0c863713d6fd3a39b449f37ac04923fb6a8c",
+        "outputs/tablas/bitacora_limpieza.csv": "2f803138594fa619aff34392b1efa25d9e7a723668da0e76381dfd9b82add4d2",
         "outputs/tablas/diagnostico_columnas.csv": "e41123edcb09b3ae78cbf6f8555d317d0f55f222ce2132db70a5de1d1f06d69f",
         "outputs/tablas/dominios_observados.csv": "c95d4905a15854653a64b720bcc956c2151d2dda3569ee33de0de60fa1896f19",
         "outputs/tablas/duplicados_exactos.csv": "81cc2a2a3e2c9afa93030cd73e31966889297b9cd65730683ef40915e0f89bd3",
         "outputs/tablas/problemas_potenciales.csv": "9ccfa68b289547254ac47edb4fb646bbb1fa9f1e4c4b971959d30dd08df40170",
-        "outputs/tablas/reporte_calidad_antes_despues.csv": "3e10db84354614849d23d43f34466aa0a990b69aa1a90ba528d4060bbf75c962",
+        "outputs/tablas/reporte_calidad_antes_despues.csv": "d915a0c77a3dd4d4f85e9cdb1555c2de732080aaefb102f37d57b6d0fc99c09c",
         "outputs/tablas/resumen_dataset.csv": "2033301b36a70926a0a7dd45313e6298cbdfb5e59227964199131dbf1ad7bb2a",
+        "outputs/tablas/inconsistencias_territoriales.csv": "961565cc3bbf6ea18cd9b012525ce47acada935e88ed37fb4ceb5e50854b48fd",
+        "outputs/reportes/validacion_territorial.md": "3620b867483bb442d0d2ea28d083325a1ecc4c2985a0c722658fb1363a5b0724",
     }
     for relative, expected in protected_hashes.items():
         assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
     assert len(tuple((ROOT / "data/raw").glob("*.html"))) == 23
     assert (ROOT / ".venv").is_dir()
+
+
+def test_salidas_limpias_y_territoriales_reflejan_el_contrato_actual():
+    clean_path = ROOT / "data/processed/establecimientos_diversificado_limpio.csv"
+    with clean_path.open(encoding="utf-8", newline="") as handle:
+        clean_rows = list(csv.DictReader(handle))
+    assert len(clean_rows) == 11_867
+    assert len(clean_rows[0]) == 21
+
+    quality = list(csv.DictReader(
+        (ROOT / "outputs/tablas/reporte_calidad_antes_despues.csv").open(
+            encoding="utf-8", newline=""
+        )
+    ))
+    columns = next(row for row in quality if row["metrica"] == "columnas")
+    assert (columns["antes"], columns["despues"]) == ("20", "21")
+
+    territorial = list(csv.DictReader(
+        (ROOT / "outputs/tablas/inconsistencias_territoriales.csv").open(
+            encoding="utf-8", newline=""
+        )
+    ))
+    assert len(territorial) == 7
+    assert sum(int(row["filas"]) for row in territorial) == 145
+    assert {row["decision"] for row in territorial} == {"revisar"}
 
 
 def _planning_rows(prefix: str) -> dict[str, list[str]]:
@@ -171,3 +200,28 @@ def test_plan_mantiene_entregables_futuros_y_rutas_canonicas():
     assert "data/source/establecimientos_diversificado_mineduc.csv" in plan
     assert "data/processed/establecimientos_diversificado_limpio.csv" in plan
     assert "data/interim/" not in plan and "data/clean/" not in plan
+
+
+def test_documentacion_refleja_el_cierre_territorial_sin_cerrar_el_proyecto():
+    plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    code_book = (ROOT / "docs/code_book/variables_territoriales.md").read_text(
+        encoding="utf-8"
+    )
+
+    for document in (plan, readme, agents, code_book):
+        assert "espejo/conversión comunitaria" in document
+        assert "INE, Censo 2018" in document
+    assert "11,867×21" in plan
+    assert "21 variables" in plan
+    assert "7 parejas" in code_book and "145 filas" in code_book
+    assert "decision=revisar" in code_book
+    assert "4 variables territoriales" in code_book
+    assert "Iris" in plan and "Code Book territorial completo" in plan
+
+    for document in (plan, readme, agents):
+        assert "Anggie" in document
+        assert "pendiente/no implementado" in document.lower()
+        assert "Jonathan" in document
+        assert "integración final pendiente" in document.lower()

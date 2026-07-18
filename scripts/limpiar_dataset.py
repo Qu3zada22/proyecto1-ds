@@ -21,6 +21,7 @@ from proyecto1_ds.cleaning import (  # noqa: E402
     clean_dataset,
     write_cleaning_outputs,
 )
+from proyecto1_ds.enrichment import DEFAULT_CATALOG_CSV, EnrichmentError, enrich_result  # noqa: E402
 
 
 class CleaningCliError(RuntimeError):
@@ -45,13 +46,14 @@ def main(argv: list[str] | None = None) -> int:
         output_file = _resolve_output_file(args.output_file)
         tables_dir = _resolve_tables_dir(args.tables_dir)
         result = clean_dataset(source_csv)
+        result = enrich_result(result, catalog_csv=ROOT / DEFAULT_CATALOG_CSV)
         outputs = write_cleaning_outputs(
             result,
             clean_csv_path=output_file,
             tables_dir=tables_dir,
             project_root=ROOT,
         )
-    except (CleaningCliError, CleaningCsvError, CleaningOutputError, OSError, csv.Error) as exc:
+    except (CleaningCliError, CleaningCsvError, CleaningOutputError, EnrichmentError, OSError, csv.Error) as exc:
         print(f"Error de limpieza: {exc}", file=sys.stderr)
         return 1
     print(f"Dataset limpio generado: {outputs.clean_csv_path}")

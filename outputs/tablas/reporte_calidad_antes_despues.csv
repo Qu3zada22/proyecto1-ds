@@ -27,3 +27,5 @@ decision_diferida,territorio,pendiente,pendiente,diferido,Validación territoria
 decision_diferida,telefonos,pendiente,pendiente,manual,Teléfonos ambiguos no se corrigen automáticamente.
 decision_diferida,duplicados_parciales,pendiente,pendiente,manual,No se fusionan ni eliminan registros parciales.
 decision_diferida,texto_libre,pendiente,pendiente,manual,"No se reescriben nombres, direcciones ni responsables."
+codigos_territoriales_asignados,__dataset__,0,11867,ejecutado,Códigos oficiales de departamento y municipio agregados como variables derivadas.
+typos_territoriales_corregidos,MUNICIPIO,19,0,ejecutado,Municipios con typo corregidos al nombre oficial del catálogo.

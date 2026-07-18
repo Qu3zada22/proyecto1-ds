@@ -4,7 +4,7 @@
 
 Este documento corresponde al **Paso 3: Elaboración del Plan de Limpieza** de `docs/instrucciones.md`. Su propósito es convertir el diagnóstico de datos crudos en reglas propuestas por variable antes de modificar cualquier dato.
 
-Este plan es **solo planificación**: no ejecuta limpieza, no normaliza valores, no deduplica registros, no valida dominios contra catálogos oficiales y no genera un dataset limpio. La limpieza profunda, el Code Book final y el reporte antes/después pertenecen a fases posteriores.
+Este plan es **solo planificación** (Paso 3): no ejecuta limpieza por sí mismo. La ejecución de estas reglas y las siguientes ya vive en el pipeline (`src/proyecto1_ds/`) y su evidencia en `outputs/`: normalización de texto/mayúsculas y bitácora, validación territorial contra catálogo INE, códigos oficiales como variables derivadas y detección de duplicados parciales. El Code Book final y el reporte narrativo antes/después siguen pendientes.
 
 El dataset diagnosticado contiene 11,867 filas, 20 columnas y 0 duplicados exactos reportados. El diagnóstico identifica 18 problemas potenciales, incluyendo una columna con encabezado no separable (`<NBSP>`), faltantes, texto sospechoso, formatos telefónicos sospechosos, dominios territoriales no verificables y duplicados parciales diferidos.
 

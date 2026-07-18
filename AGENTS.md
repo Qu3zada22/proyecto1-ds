@@ -23,8 +23,15 @@ uv run python scripts/consolidar_crudos.py
 # Regenerar diagnóstico
 uv run python scripts/diagnosticar_crudos.py
 
-# Regenerar dataset limpio y reportes
+# Generar el catálogo territorial oficial INE (requerido por la limpieza)
+uv run python scripts/generar_catalogo_territorial.py
+
+# Regenerar dataset limpio y enriquecido (normalización + códigos INE)
 uv run python scripts/limpiar_dataset.py
+
+# Detectar duplicados parciales y validar territorio (sin corrección automática)
+uv run python scripts/detectar_duplicados.py
+uv run python scripts/validar_territorio.py
 ```
 
 Antes de entregar cambios, la suite completa debe pasar y `git diff --check` no debe reportar errores nuevos.
@@ -32,22 +39,25 @@ Antes de entregar cambios, la suite completa debe pasar y `git diff --check` no 
 ## Linaje de datos
 
 ```text
-23 HTML oficiales + data/raw/manifest.json
-                    │
-                    ▼
-data/source/establecimientos_diversificado_mineduc.csv
-                    │
-          ┌─────────┴─────────┐
-          ▼                   ▼
+23 HTML oficiales + data/raw/manifest.json     data/reference/catalogo_territorial.csv (INE)
+                    │                                          │
+                    ▼                                          │
+data/source/establecimientos_diversificado_mineduc.csv        │
+                    │                                          │
+          ┌─────────┴─────────┐                               │
+          ▼                   ▼                               ▼
 docs/diagnostico.md   data/processed/establecimientos_diversificado_limpio.csv
 outputs/tablas/       outputs/tablas/bitacora_limpieza.csv
                       outputs/tablas/reporte_calidad_antes_despues.csv
+                      outputs/tablas/duplicados_parciales.csv
+                      outputs/tablas/inconsistencias_territoriales.csv
 ```
 
 Datos de referencia vigentes:
 
 - Fuente canónica: 11,867 filas, 20 columnas y 11,867 códigos únicos.
-- Dataset limpio actual: 11,867 filas y 19 columnas.
+- Dataset limpio actual: 11,867 filas y 21 columnas (incluye `departamento_codigo` y `municipio_codigo`).
+- Catálogo territorial: `data/reference/catalogo_territorial.csv` (INE, Censo 2018; 22 departamentos, 340 municipios).
 - Los 23 HTML y el manifest deben permanecer disponibles para reconstrucción y auditoría.
 
 ## Estructura principal
@@ -56,8 +66,9 @@ Datos de referencia vigentes:
 |---|---|
 | `data/raw/` | HTML oficiales y manifest; evidencia inmutable. |
 | `data/source/` | CSV consolidado canónico generado desde los HTML. |
-| `data/processed/` | Dataset limpio generado; nunca reemplaza la fuente. |
-| `src/proyecto1_ds/` | Lógica de adquisición, consolidación, diagnóstico y limpieza. |
+| `data/processed/` | Dataset limpio y enriquecido; nunca reemplaza la fuente. |
+| `data/reference/` | Catálogo territorial oficial (INE) versionado; base de la validación territorial. |
+| `src/proyecto1_ds/` | Lógica de adquisición, consolidación, diagnóstico, limpieza, enriquecimiento, duplicados y territorio. |
 | `scripts/` | Interfaces CLI del pipeline. |
 | `tests/` | Contratos y regresiones con pytest. |
 | `outputs/tablas/` | Evidencia tabular generada por diagnóstico y limpieza. |
@@ -82,7 +93,7 @@ Datos de referencia vigentes:
 
 ## Convenciones de implementación
 
-- Python `>=3.11`, dependencias administradas con `uv`.
+- Python `>=3.11`, dependencias administradas con `uv`. Dependencia de runtime: `rapidfuzz` (similitud de cadenas).
 - Tests con `pytest`; preferir comportamiento observable sobre detalles internos.
 - Mantener los CLI delgados; la lógica pertenece en `src/proyecto1_ds/`.
 - Conservar escrituras atómicas y guards de rutas existentes.
@@ -97,7 +108,7 @@ Datos de referencia vigentes:
 | Responsable | Próximos entregables |
 |---|---|
 | Anggie | Reconciliación reproducible, candidatos a duplicados parciales, excepciones telefónicas, bitácora y sección de procedencia del Code Book. |
-| Iris | Catálogo territorial versionado, consistencia departamento–municipio, dominios y documentación de variables derivadas. |
+| Iris | Hecho: catálogo territorial INE, consistencia departamento–municipio, dominios, normalización de texto/categorías, códigos oficiales y detección de duplicados. Pendiente: documentar variables (incl. derivadas) en el Code Book. |
 | Jonathan | Integración, validación final, reporte completo, README, ensamblaje del Code Book Markdown/PDF y auditoría de entrega. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book. Los entregables futuros continúan como **planificados/no implementados** hasta que exista evidencia de aceptación.

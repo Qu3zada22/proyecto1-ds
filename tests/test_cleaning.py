@@ -146,7 +146,7 @@ def test_write_cleaning_outputs_restauracion_atomica_sin_parciales(tmp_path, mon
     previous_outputs = {
         clean_csv: clean_csv.read_bytes(),
         tables_dir / "bitacora_limpieza.csv": (tables_dir / "bitacora_limpieza.csv").read_bytes(),
-        tables_dir / "reporte_calidad_antes_despues.csv": (tables_dir / "reporte_calidad_antes_despues.csv").read_bytes(),
+        tables_dir / "reporte_limpieza_base.csv": (tables_dir / "reporte_limpieza_base.csv").read_bytes(),
     }
 
     updated_csv = tmp_path / "updated.csv"
@@ -155,7 +155,7 @@ def test_write_cleaning_outputs_restauracion_atomica_sin_parciales(tmp_path, mon
     original_replace = cleaning.os.replace
 
     def fail_report_replace(source, target, *args, **kwargs):
-        if Path(source).name.startswith(".reporte_calidad_antes_despues.csv.") and Path(source).name.endswith(".tmp"):
+        if Path(source).name.startswith(".reporte_limpieza_base.csv.") and Path(source).name.endswith(".tmp"):
             raise OSError("report replace blocked")
         return original_replace(source, target, *args, **kwargs)
 
@@ -192,7 +192,7 @@ def test_write_cleaning_outputs_limpia_temporal_si_writer_falla_durante_escritur
 
     assert not clean_csv.exists()
     assert not (tables_dir / "bitacora_limpieza.csv").exists()
-    assert not (tables_dir / "reporte_calidad_antes_despues.csv").exists()
+    assert not (tables_dir / "reporte_limpieza_base.csv").exists()
     assert not list(clean_csv.parent.glob("*.tmp"))
     assert not list(tables_dir.glob("*.tmp"))
 
@@ -254,7 +254,7 @@ def test_write_cleaning_outputs_usa_rama_portatil_sin_capacidad_dir_fd(tmp_path,
 
     assert clean_csv.read_text(encoding="utf-8") == "CODIGO,DIRECTOR\n001,ANA PÉREZ\n"
     assert (tables_dir / "bitacora_limpieza.csv").is_file()
-    assert (tables_dir / "reporte_calidad_antes_despues.csv").is_file()
+    assert (tables_dir / "reporte_limpieza_base.csv").is_file()
 
 
 def test_write_cleaning_outputs_rechaza_temporal_intercambiado_por_symlink_sin_redirigir(tmp_path, monkeypatch):
@@ -303,7 +303,7 @@ def test_write_cleaning_outputs_restaura_si_temporal_se_intercambia_por_director
     previous_outputs = {
         clean_csv: clean_csv.read_bytes(),
         tables_dir / "bitacora_limpieza.csv": (tables_dir / "bitacora_limpieza.csv").read_bytes(),
-        tables_dir / "reporte_calidad_antes_despues.csv": (tables_dir / "reporte_calidad_antes_despues.csv").read_bytes(),
+        tables_dir / "reporte_limpieza_base.csv": (tables_dir / "reporte_limpieza_base.csv").read_bytes(),
     }
 
     updated_csv = tmp_path / "updated.csv"
@@ -370,7 +370,7 @@ def test_write_cleaning_outputs_limpia_directorio_temporal_intercambiado_antes_d
     assert all(not temp_dir.exists() for temp_dir in swapped_temp_dirs)
     assert not clean_csv.exists()
     assert not (tables_dir / "bitacora_limpieza.csv").exists()
-    assert not (tables_dir / "reporte_calidad_antes_despues.csv").exists()
+    assert not (tables_dir / "reporte_limpieza_base.csv").exists()
     assert not list(clean_csv.parent.glob("*.tmp"))
     assert not list(tables_dir.glob("*.tmp"))
 
@@ -602,10 +602,10 @@ def test_write_cleaning_outputs_rechaza_rutas_fuera_de_raices_permitidas_con_pro
 
     assert outputs.clean_csv_path == allowed_clean_csv
     assert outputs.log_path == allowed_tables_dir / "bitacora_limpieza.csv"
-    assert outputs.report_path == allowed_tables_dir / "reporte_calidad_antes_despues.csv"
+    assert outputs.report_path == allowed_tables_dir / "reporte_limpieza_base.csv"
     assert allowed_clean_csv.exists()
     assert (allowed_tables_dir / "bitacora_limpieza.csv").exists()
-    assert (allowed_tables_dir / "reporte_calidad_antes_despues.csv").exists()
+    assert (allowed_tables_dir / "reporte_limpieza_base.csv").exists()
 
 
 def test_write_cleaning_outputs_rechaza_data_processed_como_csv_limpio_antes_de_escribir(tmp_path, monkeypatch):
@@ -659,7 +659,7 @@ def test_write_cleaning_outputs_rechaza_directorio_existente_como_csv_limpio_sin
     assert not (tmp_path / "outputs" / "tablas").exists()
 
 
-@pytest.mark.parametrize("table_filename", ["bitacora_limpieza.csv", "reporte_calidad_antes_despues.csv"])
+@pytest.mark.parametrize("table_filename", ["bitacora_limpieza.csv", "reporte_limpieza_base.csv"])
 def test_write_cleaning_outputs_rechaza_directorio_existente_como_tabla_fija_sin_mutarlo(
     tmp_path,
     monkeypatch,
@@ -736,7 +736,7 @@ def test_write_cleaning_outputs_defaults_se_resuelven_bajo_raices_seguras(monkey
     project_root = tmp_path
     assert outputs.clean_csv_path == project_root / cleaning.DEFAULT_CLEAN_CSV
     assert outputs.log_path == project_root / cleaning.DEFAULT_TABLES_DIR / "bitacora_limpieza.csv"
-    assert outputs.report_path == project_root / cleaning.DEFAULT_TABLES_DIR / "reporte_calidad_antes_despues.csv"
+    assert outputs.report_path == project_root / cleaning.DEFAULT_TABLES_DIR / "reporte_limpieza_base.csv"
     assert planned_destinations == [outputs.clean_csv_path, outputs.log_path, outputs.report_path]
     assert outputs.clean_csv_path.parent.is_dir()
     assert outputs.log_path.parent.is_dir()
@@ -752,7 +752,7 @@ def test_salidas_son_byte_por_byte_deterministicas_e_idempotentes(tmp_path):
     first_run = {
         clean_csv: clean_csv.read_bytes(),
         tables_dir / "bitacora_limpieza.csv": (tables_dir / "bitacora_limpieza.csv").read_bytes(),
-        tables_dir / "reporte_calidad_antes_despues.csv": (tables_dir / "reporte_calidad_antes_despues.csv").read_bytes(),
+        tables_dir / "reporte_limpieza_base.csv": (tables_dir / "reporte_limpieza_base.csv").read_bytes(),
     }
     for path in first_run:
         path.write_text("stale\n", encoding="utf-8")
@@ -787,4 +787,4 @@ def test_limpieza_no_muta_fuentes_crudas_intermedias_html_ni_documentos(tmp_path
     assert {path: path.read_bytes() for path in protected} == protected
     assert (tmp_path / "data" / "processed" / "establecimientos_diversificado_limpio.csv").exists()
     assert (tmp_path / "outputs" / "tablas" / "bitacora_limpieza.csv").exists()
-    assert (tmp_path / "outputs" / "tablas" / "reporte_calidad_antes_despues.csv").exists()
+    assert (tmp_path / "outputs" / "tablas" / "reporte_limpieza_base.csv").exists()

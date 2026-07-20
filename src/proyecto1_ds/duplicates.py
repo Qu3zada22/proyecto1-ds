@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import csv
 from dataclasses import dataclass
+from io import StringIO
 import os
 from pathlib import Path
+import shutil
 from typing import Any
 
 from rapidfuzz import fuzz
@@ -38,6 +40,12 @@ CANDIDATE_FIELDS = [
     "telefono_b",
     "decision",
 ]
+AUTOMATIC_DECISIONS = {"duplicado_probable", "independiente", "revisar"}
+MANUAL_FINAL_DECISIONS = {"duplicado_confirmado", "independiente_confirmado"}
+MANUAL_PENDING_DECISIONS = {"revisar_institucional"}
+MANUAL_DECISIONS = MANUAL_FINAL_DECISIONS | MANUAL_PENDING_DECISIONS
+VALID_DECISIONS = AUTOMATIC_DECISIONS | MANUAL_DECISIONS
+LOG_FIELDS = ["variable", "regla", "filas_afectadas", "justificacion", "riesgo", "evidencia_fuente"]
 
 
 class DuplicatesCsvError(ValueError):
@@ -103,7 +111,11 @@ def detect_partial_duplicates(
                         "similitud_direccion": "" if address_score is None else round(address_score, 2),
                         "telefono_a": record_a["telefono"],
                         "telefono_b": record_b["telefono"],
-                        "decision": "revisar",
+                        "decision": _classify_decision(
+                            "alta" if address_match and phone_match else "media",
+                            record_a["telefono"],
+                            record_b["telefono"],
+                        ),
                     }
                 )
 
@@ -131,10 +143,13 @@ class DecisionSummary:
     independiente: int
     revisar: int
     total: int
+    manuales: int = 0
 
 
 def apply_duplicate_decisions(
     candidates_csv: Path | str = DEFAULT_CANDIDATES_CSV,
+    *,
+    bitacora_csv: Path | str | None = None,
 ) -> DecisionSummary:
     """Aplica reglas documentadas al CSV de candidatos y actualiza la columna `decision`.
 
@@ -148,36 +163,47 @@ def apply_duplicate_decisions(
     path = Path(candidates_csv)
     try:
         with path.open(newline="", encoding="utf-8") as csv_file:
-            reader = csv.DictReader(csv_file)
-            if reader.fieldnames is None:
+            raw = list(csv.reader(csv_file, strict=True))
+            if not raw:
                 raise DuplicatesCsvError(f"CSV de candidatos vacío: {path}")
-            rows = list(reader)
+            if raw[0] != CANDIDATE_FIELDS or any(len(row) != len(CANDIDATE_FIELDS) for row in raw[1:]):
+                raise DuplicatesCsvError(f"CSV de candidatos sin encabezado canónico: {path}")
+            rows = [dict(zip(CANDIDATE_FIELDS, row, strict=True)) for row in raw[1:]]
     except csv.Error as exc:
         raise DuplicatesCsvError(f"CSV de candidatos malformado: {path}: {exc}") from exc
 
-    counts = {"duplicado_probable": 0, "independiente": 0, "revisar": 0}
+    counts = {decision: 0 for decision in VALID_DECISIONS}
     updated: list[dict[str, Any]] = []
     for row in rows:
-        confianza = row.get("confianza", "")
-        tel_a = row.get("telefono_a", "")
-        tel_b = row.get("telefono_b", "")
-        if confianza == "alta":
-            decision = "duplicado_probable"
-        elif confianza == "media" and tel_a and tel_b and tel_a != tel_b:
-            decision = "independiente"
-        else:
-            decision = "revisar"
+        previous = row.get("decision", "")
+        if previous not in VALID_DECISIONS | {""}:
+            raise DuplicatesCsvError(f"Decisión inválida en {path}: {previous}")
+        decision = previous if previous in MANUAL_DECISIONS else _classify_decision(
+            row.get("confianza", ""), row.get("telefono_a", ""), row.get("telefono_b", "")
+        )
         counts[decision] += 1
         updated.append({**row, "decision": decision})
 
-    _write_rows(path, CANDIDATE_FIELDS, updated)
-    return DecisionSummary(
+    summary = DecisionSummary(
         candidates_path=path,
         duplicado_probable=counts["duplicado_probable"],
         independiente=counts["independiente"],
         revisar=counts["revisar"],
         total=len(updated),
+        manuales=sum(counts[decision] for decision in MANUAL_DECISIONS),
     )
+    contents = {path: _rows_bytes(CANDIDATE_FIELDS, updated)}
+    if bitacora_csv is not None:
+        log_path = Path(bitacora_csv)
+        existing_log = _read_optional_rows(log_path)
+        retained_log = [
+            row
+            for row in existing_log
+            if not (row.get("variable") == "DUPLICADOS_PARCIALES" and row.get("regla") == "decidir_duplicados")
+        ]
+        contents[log_path] = _rows_bytes(LOG_FIELDS, [*retained_log, _decision_log_row(summary)])
+    _replace_outputs(contents)
+    return summary
 
 
 def write_duplicate_outputs(
@@ -185,6 +211,7 @@ def write_duplicate_outputs(
     *,
     tables_dir: Path | str = DEFAULT_TABLES_DIR,
     reports_dir: Path | str = DEFAULT_REPORTS_DIR,
+    project_root: Path | str | None = None,
 ) -> DuplicateOutputs:
     tables_root = Path(tables_dir)
     reports_root = Path(reports_dir)
@@ -194,8 +221,27 @@ def write_duplicate_outputs(
     candidates_path = tables_root / "duplicados_parciales.csv"
     report_path = reports_root / "duplicados_parciales.md"
 
-    _write_rows(candidates_path, CANDIDATE_FIELDS, report.candidates)
-    report_path.write_text(_render_markdown(report), encoding="utf-8")
+    candidates = _preserve_existing_decisions(candidates_path, report.candidates)
+    rendered_report = DuplicateReport(
+        source_path=report.source_path,
+        threshold=report.threshold,
+        candidates=candidates,
+        summary={
+            **report.summary,
+            "duplicado_probable": sum(row["decision"] == "duplicado_probable" for row in candidates),
+            "independiente": sum(row["decision"] == "independiente" for row in candidates),
+            "revisar": sum(row["decision"] == "revisar" for row in candidates),
+            "duplicado_confirmado": sum(row["decision"] == "duplicado_confirmado" for row in candidates),
+            "independiente_confirmado": sum(row["decision"] == "independiente_confirmado" for row in candidates),
+            "revisar_institucional": sum(row["decision"] == "revisar_institucional" for row in candidates),
+        },
+    )
+    _replace_outputs(
+        {
+            candidates_path: _rows_bytes(CANDIDATE_FIELDS, candidates),
+            report_path: _render_markdown(rendered_report, project_root=project_root).encode(),
+        }
+    )
     return DuplicateOutputs(candidates_path=candidates_path, report_path=report_path)
 
 
@@ -242,26 +288,126 @@ def _require_columns(path: Path, header: list[str]) -> None:
         raise DuplicatesCsvError(f"CSV limpio sin columnas requeridas en {path}: {', '.join(missing)}.")
 
 
-def _write_rows(path: Path, fieldnames: list[str], rows: list[dict[str, Any]]) -> None:
-    temp_path = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+def _classify_decision(confianza: str, telefono_a: str, telefono_b: str) -> str:
+    if confianza == "alta":
+        return "duplicado_probable"
+    if confianza == "media" and telefono_a and telefono_b and telefono_a != telefono_b:
+        return "independiente"
+    return "revisar"
+
+
+def _decision_log_row(summary: DecisionSummary) -> dict[str, str]:
+    return {
+        "variable": "DUPLICADOS_PARCIALES",
+        "regla": "decidir_duplicados",
+        "filas_afectadas": str(summary.total),
+        "justificacion": (
+            "Reglas de decisión aplicadas sin borrado automático: "
+            f"duplicado_probable={summary.duplicado_probable} (confianza alta), "
+            f"independiente={summary.independiente} (media + teléfonos distintos), "
+            f"revisar={summary.revisar} (ambiguos)."
+        ),
+        "riesgo": "bajo",
+        "evidencia_fuente": (
+            "docs/planificacion.md; outputs/tablas/duplicados_parciales.csv; "
+            "src/proyecto1_ds/duplicates.py apply_duplicate_decisions"
+        ),
+    }
+
+
+def _read_optional_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None:
+            return []
+        return list(reader)
+
+
+def _pair_key(row: dict[str, Any]) -> tuple[str, str] | None:
+    codes = sorted((str(row.get("codigo_a", "")), str(row.get("codigo_b", ""))))
+    if not all(codes):
+        return None
+    return codes[0], codes[1]
+
+
+def _preserve_existing_decisions(
+    path: Path, candidates: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    existing = _read_optional_rows(path)
+    invalid = sorted({row.get("decision", "") for row in existing} - VALID_DECISIONS - {""})
+    if invalid:
+        raise DuplicatesCsvError(f"Decisión inválida en {path}: {invalid}")
+    decisions = {
+        key: row.get("decision", "")
+        for row in existing
+        if (key := _pair_key(row)) is not None
+        and row.get("decision", "") in MANUAL_DECISIONS
+    }
+    return [
+        {**row, "decision": decisions.get(_pair_key(row), row["decision"])}
+        for row in candidates
+    ]
+
+
+def _rows_bytes(fieldnames: list[str], rows: list[dict[str, Any]]) -> bytes:
+    buffer = StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return buffer.getvalue().encode()
+
+
+def _replace_outputs(contents: dict[Path, bytes]) -> None:
+    staged = {path: path.with_name(f".{path.name}.{os.getpid()}.tmp") for path in contents}
+    backups = {path: path.with_name(f".{path.name}.{os.getpid()}.backup") for path in contents}
+    backed_up: set[Path] = set()
     try:
-        with temp_path.open("w", newline="", encoding="utf-8") as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator="\n")
-            writer.writeheader()
-            writer.writerows(rows)
-            csv_file.flush()
-        temp_path.replace(path)
+        for path, content in contents.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            staged[path].write_bytes(content)
+    except OSError:
+        for temp_path in staged.values():
+            temp_path.unlink(missing_ok=True)
+        raise
+    existed = {path: path.exists() for path in contents}
+    try:
+        for path in contents:
+            if existed[path]:
+                shutil.copyfile(path, backups[path])
+                backed_up.add(path)
+        for path in contents:
+            staged[path].replace(path)
+    except OSError:
+        for path in reversed(contents):
+            if path in backed_up:
+                backups[path].replace(path)
+            elif not existed.get(path, False):
+                path.unlink(missing_ok=True)
+        raise
     finally:
-        if temp_path.exists():
-            temp_path.unlink()
+        for temp_path in staged.values():
+            temp_path.unlink(missing_ok=True)
+        for backup in backups.values():
+            backup.unlink(missing_ok=True)
 
 
-def _render_markdown(report: DuplicateReport) -> str:
+def _logical_path(path: Path, project_root: Path | str | None) -> Path:
+    if project_root is None:
+        return path if not path.is_absolute() else Path(path.name)
+    try:
+        return path.resolve().relative_to(Path(project_root).resolve())
+    except ValueError:
+        return Path(path.name)
+
+
+def _render_markdown(report: DuplicateReport, *, project_root: Path | str | None = None) -> str:
     summary = report.summary
     lines = [
         "# Duplicados parciales (candidatos)",
         "",
-        f"Generado por código sobre `{report.source_path.as_posix()}` mediante similitud de cadenas (RapidFuzz).",
+        f"Generado por código sobre `{_logical_path(report.source_path, project_root).as_posix()}` mediante similitud de cadenas (RapidFuzz).",
         "",
         "## Método",
         "",
@@ -272,7 +418,8 @@ def _render_markdown(report: DuplicateReport) -> str:
         "- Corroboración de oferta: el par debe coincidir en `SECTOR`, `MODALIDAD`, `JORNADA` y `PLAN`. "
         "Si difieren, es la misma sede con distinta jornada o plan (oferta legítima), no un duplicado.",
         "- `confianza = alta` cuando coinciden dirección y teléfono; `media` cuando solo una corrobora.",
-        "- **No se elimina ni fusiona ningún registro**: cada candidato queda con `decision = revisar`.",
+        "- **No se elimina ni fusiona ningún registro**: las reglas solo clasifican el triage.",
+        "- Al regenerar, una decisión vigente se conserva por el par estable de códigos; los pares nuevos reciben el triage determinista.",
         "",
         "## Resumen",
         "",
@@ -282,12 +429,18 @@ def _render_markdown(report: DuplicateReport) -> str:
         f"- Confianza alta: {summary['candidatos_confianza_alta']}",
         f"- Confianza media: {summary['candidatos_confianza_media']}",
         f"- Variantes de misma sede con distinta oferta (no duplicados): {summary['variantes_misma_sede_distinta_oferta']}",
+        f"- Duplicado probable: {summary['duplicado_probable']}",
+        f"- Independiente: {summary['independiente']}",
+        f"- Revisión institucional/manual pendiente: {summary['revisar']}",
+        f"- Duplicados confirmados manualmente: {summary['duplicado_confirmado']}",
+        f"- Independientes confirmados manualmente: {summary['independiente_confirmado']}",
+        f"- Revisión institucional explícita: {summary['revisar_institucional']}",
         "",
         "## Salida",
         "",
-        "- `outputs/tablas/duplicados_parciales.csv`: un par candidato por fila, con sus similitudes y la decisión pendiente.",
+        "- `outputs/tablas/duplicados_parciales.csv`: un par candidato por fila, con sus similitudes y decisión de triage.",
         "",
-        "La decisión final de cada par requiere revisión humana; este reporte solo entrega evidencia trazable.",
+        "Los pares marcados `revisar` requieren revisión institucional/manual; el triage no equivale a una resolución final.",
         "",
     ]
     return "\n".join(lines)

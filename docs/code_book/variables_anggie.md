@@ -74,13 +74,14 @@ Esta sección cubre las **17 variables operativas y de trazabilidad** del datase
 
 - **Descripción:** Número(s) de contacto telefónico del establecimiento según el MINEDUC.
 - **Tipo de dato:** Texto (número conservado como texto para preservar ceros y separadores).
-- **Dominio permitido:** Dígitos; se admiten separadores de múltiples números (`-`, `,`) y texto auxiliar mínimo.
+- **Dominio permitido:** Para el control final, vacío o exactamente 8 dígitos. Los separadores y textos auxiliares se preservan como evidencia, pero clasifican el valor como sospechoso vigente.
 - **Valores posibles:** 6,572 valores únicos (incluyendo vacíos y formatos mixtos).
 - **Faltantes:** 946 (7.97%); los establecimientos sin teléfono registrado quedaron vacíos.
 - **Tratamiento en limpieza:**
   - Normalización de NBSP y espacios múltiples (8 filas).
   - Marcadores de ausencia convertidos a vacío (946 filas).
-- **Excepciones de formato documentadas (201 registros con caracteres no-dígito):**
+- **Referencia histórica del diagnóstico inicial:** 201 hallazgos agregados con caracteres no-dígito. No identifica necesariamente las mismas filas del control vigente.
+- **Pendiente operativo vigente:** 251 teléfonos sospechosos bajo la regla estricta; incluye además 50 valores numéricos con longitud distinta de 8. La evidencia histórica agregada no permite establecer correspondencia registro por registro.
   - **Múltiples teléfonos separados por `-`**: ej. `24328801-24329098`, `77648506-45419234-41177068`. Representa varios contactos del establecimiento; se conserva como texto íntegro.
   - **Múltiples teléfonos separados por `,`**: ej. `3325732, 2320075, 2307014`. Mismo caso anterior.
   - **Texto auxiliar**: ej. `25763, 26725 Y 21568`. Texto aclaratorio conservado sin modificación.
@@ -98,7 +99,7 @@ Esta sección cubre las **17 variables operativas y de trazabilidad** del datase
 - **Dominio permitido:** No aplica vocabulario controlado.
 - **Valores posibles:** 1,290 valores únicos.
 - **Faltantes:** 535 (4.51%).
-- **Tratamiento en limpieza:** Sin transformaciones; los nombres propios se conservan tal como aparecen en la fuente oficial para evitar pérdida semántica. La normalización de espacios invisibles se aplicó globalmente.
+- **Tratamiento en limpieza:** Se normalizaron espacios, NBSP y caracteres invisibles en 133 filas, y marcadores inequívocos de ausencia en 535 filas. La comparación directa por `CODIGO` entre fuente y limpio confirma 668 filas modificadas; no se alteró el contenido semántico de los nombres.
 - **Variable derivada:** No.
 
 ---
@@ -110,7 +111,7 @@ Esta sección cubre las **17 variables operativas y de trazabilidad** del datase
 - **Dominio permitido:** No aplica vocabulario controlado.
 - **Valores posibles:** 5,572 valores únicos.
 - **Faltantes:** 1,830 (15.42%); es la variable con mayor porcentaje de faltantes del dataset.
-- **Tratamiento en limpieza:** Sin transformaciones; nombres propios conservados tal como aparecen.
+- **Tratamiento en limpieza:** Se normalizaron espacios, NBSP y caracteres invisibles en 1,082 filas, y marcadores inequívocos de ausencia en 1,830 filas. La comparación directa por `CODIGO` entre fuente y limpio confirma 2,912 filas modificadas; no se alteró el contenido semántico de los nombres.
 - **Variable derivada:** No.
 
 ---
@@ -247,12 +248,12 @@ Esta sección cubre las **17 variables operativas y de trazabilidad** del datase
 | `ESTABLECIMIENTO` | 5 | 5 | 1,401 | NBSP + marcadores + mayúsculas |
 | `DIRECCION` | 81 | 81 | 576 | NBSP + mayúsculas + marcadores |
 | `TELEFONO` | 946 | 946 | 954 | NBSP + marcadores (sin tocar formato) |
-| `SUPERVISOR` | 535 | 535 | 0 | Sin transformación |
-| `DIRECTOR` | 1,830 | 1,830 | 0 | Sin transformación |
+| `SUPERVISOR` | 535 | 535 | 668 | Espacios/NBSP/invisibles + marcadores |
+| `DIRECTOR` | 1,830 | 1,830 | 2,912 | Espacios/NBSP/invisibles + marcadores |
 | `NIVEL`–`DEPARTAMENTAL` | 0 | 0 | 0 | Sin transformación |
 | `archivo_origen`, `departamento_origen` | 0 | 0 | 0 | Variables de trazabilidad |
 
-Fuente: `outputs/tablas/bitacora_limpieza.csv` y `outputs/tablas/reporte_calidad_antes_despues.csv`.
+Fuente: `outputs/tablas/bitacora_limpieza.csv`, `outputs/tablas/reporte_limpieza_base.csv` y comparación directa por `CODIGO` entre `data/source/establecimientos_diversificado_mineduc.csv` y `data/processed/establecimientos_diversificado_limpio.csv`.
 
 ---
 
@@ -267,3 +268,7 @@ La detección produjo 1,355 pares candidatos. Las reglas aplicadas sin borrado a
 | `revisar` | Resto (ambiguos: mismo teléfono pero distinta dirección, o teléfonos vacíos) | 271 | Requieren revisión humana. |
 
 Evidencia: `outputs/tablas/duplicados_parciales.csv` · `src/proyecto1_ds/duplicates.py` · `scripts/decidir_duplicados.py`.
+
+El triage determinista está completado, pero los 718 pares `duplicado_probable` requieren confirmación institucional antes de cualquier fusión y los 271 pares con `decision=revisar` conservan revisión manual pendiente. No se eliminó ni fusionó ningún establecimiento. La regeneración preserva decisiones vigentes por el par estable de códigos; los pares nuevos reciben las reglas de triage documentadas.
+
+Decisiones manuales permitidas: `duplicado_confirmado`, `independiente_confirmado` y `revisar_institucional`. Cualquier otra etiqueta se rechaza; una decisión solo documenta el caso y nunca fusiona ni elimina filas.

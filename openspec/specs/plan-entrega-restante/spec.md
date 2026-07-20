@@ -83,3 +83,63 @@ Código, CLI, pruebas, docs y specs MUST usar `data/source/` como fuente y `data
 - DADO una prueba fallida
 - CUANDO se revierte
 - ENTONCES restaura todo sin perder HTML, manifest ni evidencia.
+
+### Requirement: Validación final reproducible
+
+El sistema MUST evaluar exactamente los siete controles del paso 7 y publicar `outputs/tablas/validacion_final.csv` con estado `cumple`, `requiere_revision` o `falla`, conteo con unidad y evidencia portable. MUST conservar como revisión los 718 duplicados probables, 271 ambiguos, 251 teléfonos sospechosos vigentes y 145 filas territoriales. MUST distinguir esos 251 del conteo histórico agregado de 201 hallazgos telefónicos del diagnóstico inicial y MUST NOT inferir correspondencia registro por registro. Los datasets finales header-only y conteos negativos MUST fallar sin publicación.
+
+#### Scenario: validación con pendientes conocidos
+- DADO el dataset limpio y las evidencias vigentes
+- CUANDO se ejecuta `scripts/validar_dataset.py`
+- ENTONCES genera siete filas deterministas sin presentar pendientes como éxito.
+
+#### Scenario: entrada inválida
+- DADO un insumo ausente o malformado y una salida previa
+- CUANDO se valida
+- ENTONCES falla sin alterar los bytes de la salida previa.
+
+### Requirement: Reporte integral antes/después
+
+El sistema MUST publicar exactamente las diez métricas del paso 8 una sola vez, con unidades, porcentajes y evidencia portable. MUST distinguir filas, celdas, variables, pares y pendientes, sin sumar correcciones superpuestas como un total artificial. Fuente y limpio MUST contener registros y conservar igual cardinalidad; una diferencia de filas MUST fallar.
+
+La limpieza MUST publicar su evidencia intermedia en `reporte_limpieza_base.csv` y MUST NOT sobrescribir el reporte integral. La validación MUST recomputar duplicados y territorio desde el limpio mediante los módulos existentes y rechazar evidencia stale. Las decisiones MUST pertenecer al dominio cerrado automático/manual; ninguna decisión fusiona o elimina filas.
+
+#### Scenario: reporte real reproducible
+- DADO fuente, limpio, diagnóstico, bitácora, duplicados, territorio y validación
+- CUANDO se ejecuta `scripts/generar_reporte_calidad.py`
+- ENTONCES genera exactamente diez filas e integra 718 probables, 271 ambiguos, 251 teléfonos sospechosos vigentes y 145 filas pendientes; 201 permanece etiquetado como diagnóstico histórico agregado.
+
+#### Scenario: evidencia inválida
+- DADO un insumo ausente o malformado y un reporte previo
+- CUANDO se genera
+- ENTONCES falla sin alterar el reporte previo.
+
+### Requirement: Code Book maestro Markdown/PDF
+
+El sistema MUST ensamblar `docs/code_book.md` desde las secciones canónicas de Anggie e Iris, con exactamente 21 variables y un dataset no vacío. MUST exigir campos con contenido, rechazar rutas absolutas, derivar fecha/versión coincidentes y publicar un solo conteo autoritativo de faltantes desde el limpio. MUST generar `docs/code_book.pdf` de forma atómica y byte-idéntica, con tamaño carta, páginas, texto extraíble y un solo título.
+
+#### Scenario: ensamblado reproducible
+- DADO ambas secciones válidas y el dataset limpio
+- CUANDO se ejecuta `scripts/generar_code_book.py`
+- ENTONCES publica atómicamente 21 variables sin ocultar 271 pares, 251 teléfonos sospechosos vigentes ni 145 filas pendientes, y conserva 201 como referencia histórica agregada del diagnóstico inicial.
+
+#### Scenario: fuente inválida
+- DADO una fuente ausente, incompleta, duplicada o desordenada y un maestro previo
+- CUANDO se ensambla
+- ENTONCES falla sin alterar el maestro previo.
+
+#### Scenario: PDF reproducible
+- DADO el maestro y la hoja de estilo válidos, con las cinco herramientas disponibles
+- CUANDO se ejecuta `scripts/generar_code_book_pdf.py` dos veces
+- ENTONCES publica un PDF byte-idéntico, no vacío, tamaño carta, con páginas, texto y un solo título.
+
+#### Scenario: PDF inválido o herramienta ausente
+- DADO un PDF previo y un fallo operativo o validación negativa
+- CUANDO se intenta generar
+- ENTONCES falla sin alterar el PDF previo.
+
+### Requirement: Auditoría interna honesta
+
+`docs/auditoria_final.md` MUST registrar hashes, comandos, cinco materiales, contribuciones Git reales y bloqueos manuales. MUST presentarse como recibo interno y MUST NOT declarar el dataset sin errores ni la entrega plenamente apta mientras R5e, R5f, R5g, R7, R9, RE o RT sigan parciales.
+
+El PDF MUST contener el SHA-256 del Markdown usado para renderizarlo. Su CLI MUST restringir `--output` a `docs/*.pdf`, usar timeout finito y normalizar fallos operativos sin destruir la salida previa.

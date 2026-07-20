@@ -1,31 +1,11 @@
-metrica,variable,antes,despues,estado,nota
-filas,__dataset__,11867,11867,ejecutado,Conteo de filas preservado.
-columnas,__dataset__,20,21,ejecutado,Columna <NBSP> eliminada y dos códigos territoriales derivados agregados.
-faltantes,'<NBSP>',11867,NA,ejecutado,Conteo comparable antes/después.
-faltantes,CODIGO,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,DISTRITO,532,532,ejecutado,Conteo comparable antes/después.
-faltantes,DEPARTAMENTO,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,MUNICIPIO,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,ESTABLECIMIENTO,5,5,ejecutado,Conteo comparable antes/después.
-faltantes,DIRECCION,81,81,ejecutado,Conteo comparable antes/después.
-faltantes,TELEFONO,946,946,ejecutado,Conteo comparable antes/después.
-faltantes,SUPERVISOR,535,535,ejecutado,Conteo comparable antes/después.
-faltantes,DIRECTOR,1830,1830,ejecutado,Conteo comparable antes/después.
-faltantes,NIVEL,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,SECTOR,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,AREA,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,STATUS,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,MODALIDAD,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,JORNADA,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,PLAN,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,DEPARTAMENTAL,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,archivo_origen,0,0,ejecutado,Conteo comparable antes/después.
-faltantes,departamento_origen,0,0,ejecutado,Conteo comparable antes/después.
-marcadores_ausencia_normalizados,__dataset__,3929,3929,ejecutado,Marcadores claros convertidos a vacío consistente.
-mayusculas_normalizadas,__dataset__,10,10,ejecutado,Celdas de texto/categóricas canonizadas a mayúsculas.
-decision_diferida,territorio,pendiente,pendiente,diferido,Validación territorial requiere catálogo oficial.
-decision_diferida,telefonos,pendiente,pendiente,manual,Teléfonos ambiguos no se corrigen automáticamente.
-decision_diferida,duplicados_parciales,pendiente,pendiente,manual,No se fusionan ni eliminan registros parciales.
-decision_diferida,texto_libre,pendiente,pendiente,manual,"No se reescriben nombres, direcciones ni responsables."
-codigos_territoriales_asignados,__dataset__,0,11867,ejecutado,Códigos oficiales de departamento y municipio agregados como variables derivadas.
-typos_territoriales_corregidos,MUNICIPIO,19,0,ejecutado,Municipios con typo corregidos al nombre oficial del catálogo.
+metrica,antes,despues,unidad,interpretacion,evidencia
+registros,11867,11867,filas,No se agregaron ni eliminaron establecimientos.,data/source/establecimientos_diversificado_mineduc.csv; data/processed/establecimientos_diversificado_limpio.csv
+variables,20,21,variables,Se eliminó <NBSP> y se agregaron dos códigos territoriales.,outputs/tablas/bitacora_limpieza.csv
+valores_faltantes,15796 (6.66%),3929 (1.58%),celdas y porcentaje,Porcentaje sobre todas las celdas de cada versión.,data/source/establecimientos_diversificado_mineduc.csv; data/processed/establecimientos_diversificado_limpio.csv
+variables_con_na,7,6,variables,Columnas con al menos una ausencia inequívoca.,data/source/establecimientos_diversificado_mineduc.csv; data/processed/establecimientos_diversificado_limpio.csv
+duplicados_exactos,0,0,registros adicionales,Duplicados de fila completa; no se eliminó ninguna fila.,outputs/tablas/duplicados_exactos.csv; outputs/tablas/validacion_final.csv
+posibles_duplicados,no evaluado,1355 (0 fusionados; 718 probable; 271 revisar; 0 duplicado confirmado; 0 independiente confirmado),pares,Candidatos por similitud; ninguna fusión es automática y 989 pares requieren confirmación o revisión.,outputs/tablas/duplicados_parciales.csv
+formatos_inconsistentes,5,1 variables; 0 categorías (251 registros TELEFONO; 0 campos exteriores),variables y categorías,"Integra espacios, teléfonos y categorías de los controles finales.",outputs/tablas/problemas_potenciales.csv; outputs/tablas/validacion_final.csv
+tipos_incorrectos,0,0,variables,"Contrato semántico: identificadores, códigos y teléfonos son texto.",outputs/tablas/diagnostico_columnas.csv; outputs/tablas/validacion_final.csv
+categorias_inconsistentes,2,0,variantes,Variantes deterministas corregidas; 145 filas territoriales permanecen en revisión.,outputs/tablas/bitacora_limpieza.csv; outputs/tablas/validacion_final.csv
+errores_corregidos,0 aplicadas,3929 ausencias; 3104 espacios; 10 mayúsculas; 19 territorios; 11867 códigos derivados,resumen por tipo,No se suman categorías superpuestas en un total artificial.,outputs/tablas/bitacora_limpieza.csv

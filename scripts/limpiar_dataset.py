@@ -58,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     print(f"Dataset limpio generado: {outputs.clean_csv_path}")
     print(f"Bitácora de limpieza: {outputs.log_path}")
-    print(f"Reporte antes/después: {outputs.report_path}")
+    print(f"Reporte base de limpieza: {outputs.report_path}")
     return 0
 
 

@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Definir la generación reproducible de un dataset limpio conservador desde la fuente canónica vigente, con bitácora y reporte antes/después, sin mutar fuentes crudas, canónicas ni diagnósticos existentes.
+Definir la generación reproducible de un dataset limpio conservador desde la fuente canónica vigente, con bitácora y reporte base, sin mutar fuentes crudas, canónicas, diagnósticos ni el reporte integral final.
 
 ## Requisitos
 
@@ -34,6 +34,8 @@ El sistema MUST generar `data/processed/establecimientos_diversificado_limpio.cs
 ### Requisito: Reglas determinísticas conservadoras
 
 El sistema MUST aplicar solo reglas determinísticas seguras: eliminar la columna `<NBSP>` si está completamente vacía, normalizar NBSP/espacios, convertir marcadores inequívocos de ausencia a vacío/nulo consistente y preservar identificadores, teléfonos, categorías y texto libre como cadenas.
+
+La preservación MUST distinguir diagnóstico de validación: 201 es el conteo histórico agregado del diagnóstico inicial para teléfonos con caracteres no numéricos; 251 es el pendiente operativo vigente bajo la regla vacío o exactamente 8 dígitos, incluidos 50 valores numéricos con longitud distinta. La evidencia histórica agregada MUST NOT usarse para afirmar correspondencia registro por registro.
 
 #### Escenario: reglas seguras aplicadas
 
@@ -73,7 +75,7 @@ El sistema MUST emitir `outputs/tablas/bitacora_limpieza.csv` con, como mínimo,
 
 ### Requisito: Reporte antes/después
 
-El sistema MUST emitir `outputs/tablas/reporte_calidad_antes_despues.csv` con métricas comparables antes y después, incluyendo filas, columnas, faltantes por variable, columna `<NBSP>`, marcadores de ausencia normalizados y decisiones diferidas.
+El sistema MUST emitir `outputs/tablas/reporte_limpieza_base.csv` con métricas intermedias de limpieza. MUST NOT crear ni sobrescribir `outputs/tablas/reporte_calidad_antes_despues.csv`, reservado al reporte integral final.
 
 El reporte MUST comparar filas, columnas, faltantes, `<NBSP>`, ausencias y decisiones; MUST registrar 11,867 filas, 20→21 columnas y métricas territoriales.
 (Anteriormente: no fijaba 20→21 ni métricas territoriales.)
@@ -87,7 +89,7 @@ El reporte MUST comparar filas, columnas, faltantes, `<NBSP>`, ausencias y decis
 
 ### Requisito: Atomicidad e idempotencia de salidas
 
-El sistema MUST tratar el CSV limpio, la bitácora y el reporte antes/después como un único conjunto de salida atómico e idempotente. Para una misma entrada, dos ejecuciones MUST producir salidas byte-for-byte idénticas, sin agregar filas duplicadas ni conservar filas obsoletas de ejecuciones anteriores.
+El sistema MUST tratar el CSV limpio, la bitácora y `reporte_limpieza_base.csv` como un único conjunto de salida atómico e idempotente. Para una misma entrada, dos ejecuciones MUST producir salidas byte-for-byte idénticas sin mutar el reporte integral.
 
 #### Escenario: fallo durante escritura multi-salida
 

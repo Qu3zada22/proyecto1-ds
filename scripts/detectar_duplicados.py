@@ -43,7 +43,9 @@ def main(argv: list[str] | None = None) -> int:
         tables_dir = _resolve_under(args.tables_dir, ROOT / "outputs/tablas", "--tables-dir")
         reports_dir = _resolve_under(args.reports_dir, ROOT / "outputs/reportes", "--reports-dir")
         report = detect_partial_duplicates(source_csv, threshold=args.threshold)
-        outputs = write_duplicate_outputs(report, tables_dir=tables_dir, reports_dir=reports_dir)
+        outputs = write_duplicate_outputs(
+            report, tables_dir=tables_dir, reports_dir=reports_dir, project_root=ROOT
+        )
     except (DuplicatesCliError, DuplicatesCsvError, OSError, csv.Error) as exc:
         print(f"Error de duplicados: {exc}", file=sys.stderr)
         return 1

@@ -9,51 +9,52 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 - Procedencia inmutable: 23 HTML en `data/raw/` y `data/raw/manifest.json`.
 - Territorio: catálogo reproducible desde un **espejo/conversión comunitaria** fijado; la fuente primaria declarada es INE, Censo 2018. El espejo no es una publicación primaria oficial.
 - Resultado territorial: 11,867×21; 2 variantes tipográficas (19 filas) corregidas y 7 parejas (145 filas) conservadas con `decision=revisar` y códigos provisionales.
-- Trabajo restante: entregables de Anggie **completados** (decisiones de duplicados, excepciones telefónicas y Code Book); integración final pendiente de Jonathan.
+- Trabajo restante: automatización completada para triage (718/366/271), validación, reporte y Code Book; pendientes institucionales: confirmar 718 `duplicado_probable`, revisar 271 pares ambiguos, 251 teléfonos sospechosos vigentes y 145 filas territoriales. Los 201 casos telefónicos del diagnóstico inicial son hallazgos históricos agregados por caracteres no numéricos, no el pendiente operativo, y no permiten correspondencia registro por registro.
+- Resumen verificable de la matriz: **22 `Completado`, 7 `Parcial`, 0 `Faltante`, 0 `Incierto`**.
 - Estados: **Completado** (aceptación demostrada), **Parcial** (hay evidencia, queda brecha), **Faltante** (sin entregable aceptable) e **Incierto** (requiere una decisión o fuente).
 - Todo elemento marcado **Planificado/no implementado** permanece fuera del estado actual.
 
 ## Matriz de requisitos
 
-| ID | Fuente | Requisito | Estado | Evidencia actual | Brecha | Responsable | Dependencia | Aceptación | PR |
+| ID | Fuente | Requisito | Estado | Evidencia actual | Brecha | Responsable | Dependencia | Aceptación | Unidad |
 |---|---|---|---|---|---|---|---|---|---|
-| R1 | Paso 1.1 | Descargar cobertura nacional hasta Diversificado | Completado | 23 HTML + manifest | Ninguna del alcance preservado | Jonathan | MINEDUC | 23 departamentos trazables y hashes válidos | PR1 |
-| R2 | Paso 1.2 | Guardar datos crudos en CSV | Completado | CSV canónico 11,867×20 | Ninguna | Jonathan | R1 | Regeneración byte-idéntica desde HTML | PR1 |
-| R3a | Paso 2.3a | Filas y columnas por código | Completado | `resumen_dataset.csv` | Ninguna | Anggie | R2 | 11,867×20 reproducible | Hecho |
-| R3b | Paso 2.3b | Tipos por variable | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Las 20 variables tienen tipo reportado | Hecho |
-| R3c | Paso 2.3c | Faltantes: cantidad y porcentaje | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteos y porcentajes para 20 variables | Hecho |
-| R3d | Paso 2.3d | Únicos por columna | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteo para 20 variables | Hecho |
-| R3e | Paso 2.3e | Duplicados exactos | Completado | `duplicados_exactos.csv` | Ninguna | Anggie | R2 | Conteo reproducible: 0 | Hecho |
-| R3f | Paso 2.3f | Dominios e inconsistencias | Completado | `dominios_observados.csv`; catálogo reproducible; 7 parejas/145 filas `revisar` | Ninguna para detección | Iris | Espejo fijado; INE, Censo 2018 como fuente primaria declarada | Hallazgos sustentados sin presentar el espejo como publicación primaria | Hecho |
-| R3g | Paso 2.3g | Formatos inconsistentes | Completado | `problemas_potenciales.csv` | Ninguna para diagnóstico inicial | Anggie | R2 | Hallazgos y conteos regenerables | Hecho |
-| R3h | Paso 2.3h | Problemas potenciales explícitos | Completado | 18 problemas en diagnóstico | Ninguna para diagnóstico inicial | Anggie | R3a–R3g | Tabla y resumen coinciden | Hecho |
-| R4a | Paso 3.4a | Problema por variable | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada variable/problema está cubierto | Hecho |
-| R4b | Paso 3.4b | Regla exacta y justificación | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Regla previa a transformación | Hecho |
-| R4c | Paso 3.4c | Riesgo de cada regla | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada regla declara riesgo | Hecho |
-| R5a | Paso 4.5a | Nulos, vacíos y marcadores | Parcial | CSV limpio + bitácora | Faltan excepciones finales | Anggie | Reconciliación | Marcadores resueltos y auditados | PR5 |
-| R5b | Paso 4.5b | Tipos correctos | Parcial | Limpieza conservadora | Falta validación final de tipos | Jonathan | R5a–R5h | Tipos esperados pasan pruebas | PR6 |
-| R5c | Paso 4.5c | Normalización de texto | Completado | Mayúsculas, NBSP, invisibles (NFC) y marcadores normalizados; bitácora | Ninguna para reglas deterministas | Iris | Bitácora | Cero bordes; decisiones trazadas | Hecho |
-| R5d | Paso 4.5d | Categorías consistentes | Completado | Vocabulario controlado verificado; territorio validado contra catálogo INE | Ninguna | Iris | R3f | Variantes justificadas y probadas | Hecho |
-| R5e | Paso 4.5e | Formatos uniformes | Completado | Formatos diagnosticados; 201 excepciones telefónicas documentadas con regla en Code Book | Ninguna para el alcance de documentación | Anggie | Revisión humana | Teléfonos/códigos con regla y excepciones | PR5 |
-| R5f | Paso 4.5f | Valores inválidos | Parcial | 2 variantes tipográficas/19 filas corregidas; 7 parejas/145 filas siguen `revisar` | Revisión telefónica pendiente/no implementado por Anggie | Iris | R5e | Territorio trazado; teléfonos quedan pendientes | Parcial |
-| R5g | Paso 4.5g | Duplicados exactos y parciales | Completado | Exactos=0; 1,355 candidatos con decisiones: 718 duplicado_probable, 366 independiente, 271 revisar | Ninguna para el alcance de reglas documentadas sin borrado | Anggie | Detección hecha | Candidatos revisados; sin borrado automático | PR5 |
-| R5h | Paso 4.5h | Consistencia cruzada | Completado | `validacion_territorial.md`; 329 válidas, 22 por regla y 7 parejas/145 filas `revisar` | Ninguna para el alcance de detección de Iris | Iris | Catálogo reproducible | Pendientes preservados, sin autocorrección inventada | Hecho |
-| R5i | Paso 4.5i | Variables derivadas justificadas | Completado | 4 variables territoriales documentadas; `departamento_codigo` y `municipio_codigo` marcadas como derivadas | Ninguna para la sección de Iris | Iris | Code Book territorial | Método, dominio, provisionalidad y utilidad documentados | Hecho |
-| R6 | Control 6 | Bitácora de transformaciones | Parcial | `bitacora_limpieza.csv` con decisiones de duplicados incorporadas | Falta incorporar decisiones finales de integración | Anggie | R5 | Una fila por transformación/decisión | PR5 |
-| R7 | Control 7 | Validación automática final | Faltante | Pruebas del pipeline, no cierre completo | Falta validación final de toda la rúbrica | Jonathan | R4–R6 | Suite prueba siete controles y emite reporte | PR6 |
-| R8 | Control 8 | Comparación antes/después | Parcial | CSV comparativo preliminar | Falta reporte de calidad completo | Jonathan | R7 | Diez métricas justificadas y regenerables | PR6 |
-| R9 | Cierre 9 | Único conjunto limpio final | Parcial | CSV limpio actual 11,867×21 | Decisiones de Anggie e integración final pendiente | Jonathan | R5–R8 | Archivo único pasa validación final | PR7 |
-| R10 | Cierre 10 | Code Book completo | Parcial | Sección territorial de Iris (4 variables) + sección Anggie (17 variables) completas | Falta ensamblaje de 21 variables en un documento y PDF | Jonathan | R5–R9 | 21 variables + procedencia + versión; PDF reproducible | PR7 |
-| RE | Material final | Código, repositorio, área, PDF y CSV | Faltante | Código/repositorio/CSV parciales | Faltan Code Book, README y auditoría de entrega | Jonathan | R7–R10 | Cinco materiales enlazados y reproducibles | PR7 |
-| RT | Trabajo en equipo | Contribución significativa visible | Parcial | Historial Git y docs existentes | Falta cierre verificable por integrante | Equipo | Asignaciones siguientes | Cada persona: commit identificable + sección Code Book | PR4–PR7 |
+| R1 | Paso 1.1 | Descargar cobertura nacional hasta Diversificado | Completado | 23 HTML + manifest | Ninguna del alcance preservado | Jonathan | MINEDUC | 23 departamentos trazables y hashes válidos | U1 Fuente |
+| R2 | Paso 1.2 | Guardar datos crudos en CSV | Completado | CSV canónico 11,867×20 | Ninguna | Jonathan | R1 | Regeneración byte-idéntica desde HTML | U1 Fuente |
+| R3a | Paso 2.3a | Filas y columnas por código | Completado | `resumen_dataset.csv` | Ninguna | Anggie | R2 | 11,867×20 reproducible | U2 Diagnóstico |
+| R3b | Paso 2.3b | Tipos por variable | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Las 20 variables tienen tipo reportado | U2 Diagnóstico |
+| R3c | Paso 2.3c | Faltantes: cantidad y porcentaje | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteos y porcentajes para 20 variables | U2 Diagnóstico |
+| R3d | Paso 2.3d | Únicos por columna | Completado | `diagnostico_columnas.csv` | Ninguna | Anggie | R2 | Conteo para 20 variables | U2 Diagnóstico |
+| R3e | Paso 2.3e | Duplicados exactos | Completado | `duplicados_exactos.csv` | Ninguna | Anggie | R2 | Conteo reproducible: 0 | U2 Diagnóstico |
+| R3f | Paso 2.3f | Dominios e inconsistencias | Completado | `dominios_observados.csv`; catálogo reproducible; 7 parejas/145 filas `revisar` | Ninguna para detección | Iris | Espejo fijado; INE, Censo 2018 como fuente primaria declarada | Hallazgos sustentados sin presentar el espejo como publicación primaria | U2 Diagnóstico |
+| R3g | Paso 2.3g | Formatos inconsistentes | Completado | `problemas_potenciales.csv` | Ninguna para diagnóstico inicial | Anggie | R2 | Hallazgos y conteos regenerables | U2 Diagnóstico |
+| R3h | Paso 2.3h | Problemas potenciales explícitos | Completado | 18 problemas en diagnóstico | Ninguna para diagnóstico inicial | Anggie | R3a–R3g | Tabla y resumen coinciden | U2 Diagnóstico |
+| R4a | Paso 3.4a | Problema por variable | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada variable/problema está cubierto | U3 Plan |
+| R4b | Paso 3.4b | Regla exacta y justificación | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Regla previa a transformación | U3 Plan |
+| R4c | Paso 3.4c | Riesgo de cada regla | Completado | `docs/plan_limpieza.md` | Ninguna | Jonathan | R3 | Cada regla declara riesgo | U3 Plan |
+| R5a | Paso 4.5a | Nulos, vacíos y marcadores | Completado | CSV limpio + bitácora: marcadores inequívocos normalizados | Ninguna para reglas aplicadas | Anggie | Reconciliación | Marcadores resueltos y auditados | U4 Limpieza |
+| R5b | Paso 4.5b | Tipos correctos | Completado | `validacion_final.csv`: esquema semántico esperado de 21 variables | Ninguna; identificadores, códigos y teléfonos se preservan como texto | Jonathan | R5a–R5h | Control `tipos_esperados` cumple | U4 Limpieza |
+| R5c | Paso 4.5c | Normalización de texto | Completado | Mayúsculas, NBSP, invisibles (NFC) y marcadores normalizados; bitácora | Ninguna para reglas deterministas | Iris | Bitácora | Cero bordes; decisiones trazadas | U4 Limpieza |
+| R5d | Paso 4.5d | Categorías consistentes | Completado | Vocabulario controlado verificado; territorio validado contra catálogo INE | Ninguna | Iris | R3f | Variantes justificadas y probadas | U4 Limpieza |
+| R5e | Paso 4.5e | Formatos uniformes | Parcial | Control vigente: 251 teléfonos sospechosos; referencia histórica: 201 hallazgos agregados del diagnóstico inicial; además hay 50 valores numéricos vigentes con longitud distinta de 8 | Falta aceptación institucional de los 251 teléfonos; la evidencia histórica agregada no identifica correspondencia fila a fila | Anggie | Revisión humana | Formatos aceptados o excepciones aprobadas | U4 Limpieza |
+| R5f | Paso 4.5f | Valores inválidos | Parcial | 2 variantes tipográficas/19 filas corregidas; 7 parejas/145 filas siguen `revisar`; 251 teléfonos siguen en revisión | Aceptación telefónica vigente y territorial pendiente | Iris | R5e | Territorio trazado; teléfonos quedan pendientes | U4 Limpieza |
+| R5g | Paso 4.5g | Duplicados exactos y parciales | Parcial | Exactos=0; triage reproducible: 718 duplicado_probable, 366 independiente, 271 revisar | Confirmar 718 probables y revisar 271 ambiguos antes de fusionar; 0 fusionados | Anggie | Detección hecha | Cada candidato confirmado institucionalmente; sin fusión automática | U4 Limpieza |
+| R5h | Paso 4.5h | Consistencia cruzada | Completado | `validacion_territorial.md`; 329 válidas, 22 por regla y 7 parejas/145 filas `revisar` | Ninguna para el alcance de detección de Iris | Iris | Catálogo reproducible | Pendientes preservados, sin autocorrección inventada | U4 Limpieza |
+| R5i | Paso 4.5i | Variables derivadas justificadas | Completado | 4 variables territoriales documentadas; `departamento_codigo` y `municipio_codigo` marcadas como derivadas | Ninguna para la sección de Iris | Iris | Code Book territorial | Método, dominio, provisionalidad y utilidad documentados | U4 Limpieza |
+| R6 | Control 6 | Bitácora de transformaciones | Completado | `bitacora_limpieza.csv` + `reporte_limpieza_base.csv`; triage sin fusión | Ninguna para transformaciones ejecutadas; decisiones futuras se agregarán al aprobarse | Anggie | R5 | Una fila por transformación aplicada | U4 Limpieza |
+| R7 | Control 7 | Validación automática final | Parcial | Mecanismo completo: exactamente 7 controles; 3 cumple, 4 requieren revisión, 0 falla | Resolver o aceptar institucionalmente los cuatro controles en revisión | Jonathan | R4–R6 | Los siete controles cumplen o tienen excepción formal aceptada | U5 Validación |
+| R8 | Control 8 | Comparación antes/después | Completado | `reporte_calidad_antes_despues.csv`: exactamente 10 métricas, con pendientes integrados | Ninguna para el reporte tabular; pendientes operativos siguen abiertos | Jonathan | R7 | Métricas, porcentajes, unidades y evidencia regenerables | U6 Reporte |
+| R9 | Cierre 9 | Único conjunto limpio final | Parcial | CSV único 11,867×21, sin adición/eliminación de filas | R5e, R5f, R5g y R7 conservan aceptación institucional pendiente | Jonathan | R5–R8 | Archivo único con controles aceptados; automatización sola no basta | U7 Dataset |
+| R10 | Cierre 10 | Code Book completo | Completado | `docs/code_book.md` con 21 variables + `docs/code_book.pdf` reproducible y validado | Ninguna para documentación; no cierra pendientes del dataset | Jonathan | R5–R9 | Markdown y PDF reproducibles, completos y legibles | U8 Code Book |
+| RE | Material final | Código, repositorio, área, PDF y CSV | Parcial | Cinco materiales disponibles; auditoría interna documenta hashes y comandos | CSV final sin aceptación institucional mientras R9 siga parcial | Jonathan | R7–R10 | Cinco materiales reproducibles y dataset institucionalmente aceptado | U9 Entrega |
+| RT | Trabajo en equipo | Contribución significativa visible | Parcial | Historial real identifica aportes de Anggie, Iris y Jonathan | Publicar commits de la integración actual | Equipo | Unidades anteriores | Cada persona con commit publicado y sección Code Book | Historial Git |
 
 ## Asignaciones y contribución visible
 
 | ID | Persona | Entregable | Aceptación | Aporte Code Book | Evidencia Git | Dependencias |
 |---|---|---|---|---|---|---|
-| A-Anggie | Anggie | Completado: decisiones de duplicados parciales (718/366/271), excepciones telefónicas documentadas y sección Code Book (17 variables) | Comando reproducible `scripts/decidir_duplicados.py`; bitácora actualizada sin borrado; excepciones justificadas en Code Book | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits identificables con evidencia actualizada y sección propia | CSV alterno; diagnóstico; revisión humana |
-| A-Iris | Iris | Catálogo reproducible y consistencia departamento–municipio | 7 parejas/145 filas trazadas como `revisar`; 2 variantes/19 filas justificadas | Code Book territorial completo: dominios, valores y 2 variables derivadas | Uno o más commit identificables que modifiquen catálogo/validación y su sección | Espejo fijado; INE, Censo 2018 como fuente primaria declarada |
-| A-Jonathan | Jonathan | Integración final pendiente: validación, reporte, README, Markdown/PDF y auditoría | Suite verde; reporte completo; PDF reproducible; checklist de entrega | Code Book: ensamblaje, versión y tratamientos finales | Uno o más commit identificables que modifiquen integración y su sección | Entregas de Anggie e Iris |
+| A-Anggie | Anggie | Implementación de reglas y triage (718/366/271), excepciones telefónicas y sección Code Book; confirmación/revisión institucional pendiente | Flujo reproducible; decisiones preservadas; bitácora idempotente; sin borrado ni fusión | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits reales `b8eb3de`, `7bac604`; integración actual pendiente de publicación | CSV alterno; diagnóstico; revisión institucional/manual |
+| A-Iris | Iris | Catálogo reproducible y consistencia departamento–municipio | 7 parejas/145 filas trazadas como `revisar`; 2 variantes/19 filas justificadas | Code Book territorial completo: dominios, valores y 2 variables derivadas | Commits reales `b314998`, `bdf8736`; sección propia publicada | Espejo fijado; INE, Censo 2018 como fuente primaria declarada |
+| A-Jonathan | Jonathan | Validación, reporte integral, Code Book Markdown/PDF y auditoría interna | Siete controles, 10 métricas y maestro de 21 variables reproducibles | Code Book maestro: ensamblaje, versión y pendientes | Commits previos reales; integración actual pendiente de publicación | Entregas de Anggie e Iris |
 
 ## Evidencia detallada de fases previas
 
@@ -176,22 +177,22 @@ Definir la estrategia de limpieza antes de tocar los datos.
 - **Detección de duplicados parciales** en `src/proyecto1_ds/duplicates.py` (`scripts/detectar_duplicados.py`): similitud RapidFuzz con corroboración de sede y oferta; salida `outputs/tablas/duplicados_parciales.csv` y `outputs/reportes/duplicados_parciales.md`. Sin borrado automático.
 - **Validación territorial** en `src/proyecto1_ds/territorial.py` (`scripts/validar_territorio.py`): consistencia departamento–municipio contra catálogo; salida `outputs/tablas/inconsistencias_territoriales.csv` y `outputs/reportes/validacion_territorial.md`.
 
-## Ruta crítica y próximos PR
+## Ruta crítica y unidades de entrega
 
 ```text
 fuente canónica (hecho) → catálogo territorial (hecho) → normalización + códigos INE (hecho)
-→ duplicados parciales: detección (hecha) y revisión humana (pendiente) + teléfonos (pendiente)
-→ validación automática final → reporte de calidad completo → Code Book Markdown/PDF → auditoría de entrega
+→ duplicados: triage hecho; confirmar 718 probables + revisar 271 ambiguos
+→ validación + reporte + Code Book Markdown/PDF (automatizados) → aceptación institucional → publicación Git
 ```
 
-1. **PR4 — Implementado:** catálogo territorial, consistencia cruzada, dominios y variables derivadas territoriales.
-2. **PR5 — Parcial:** duplicados parciales detectados; falta revisión humana de candidatos y excepciones telefónicas.
-3. **PR6 — Planificado/no implementado:** validación automática final (7 controles) y reporte de calidad completo (10 métricas).
-4. **PR7 — Planificado/no implementado:** Code Book Markdown/PDF, auditoría de entrega y material final.
+1. **U4 — Limpieza automatizada:** reglas, bitácora y triage reproducibles; quedan confirmaciones institucionales.
+2. **U5/U6 — Validación y reporte:** mecanismos completos; cuatro controles conservan `requiere_revision`.
+3. **U8 — Code Book:** Markdown y PDF reproducibles con las 21 variables.
+4. **U9 — Entrega:** cinco materiales disponibles; CSV y contribuciones esperan aceptación/publicación.
 
 ## Control de cierre
 
-- Ningún PR futuro puede declararse completo solo por estar descrito aquí.
+- Ninguna unidad puede declararse completa solo por estar automatizada o descrita aquí.
 - Cada aceptación debe apuntar a código, prueba, dato o documento versionado y al commit de su responsable.
 - No se modifica la procedencia para resolver una discrepancia; se registra y se revisa.
-- La entrega se bloquea mientras R7, R10, RE o RT no estén **Completado**.
+- La entrega se bloquea mientras R5e, R5f, R5g, R7, R9, RE o RT no estén **Completado**. R10 completo acredita documentación, no la aceptación del dataset.

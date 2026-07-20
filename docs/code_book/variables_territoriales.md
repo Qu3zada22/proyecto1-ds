@@ -1,6 +1,6 @@
 # Code Book — Variables territoriales (sección de Iris)
 
-Esta sección de Iris está completa para las **4 variables territoriales** del dataset limpio `data/processed/establecimientos_diversificado_limpio.csv`. Jonathan mantiene la integración final pendiente del Code Book de 21 variables (Markdown/PDF).
+Esta sección de Iris está completa para las **4 variables territoriales** del dataset limpio `data/processed/establecimientos_diversificado_limpio.csv`. El maestro Markdown y su PDF reproducible integran las 21 variables sin cerrar pendientes institucionales.
 
 **Metadatos comunes a estas variables**
 

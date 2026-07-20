@@ -5,7 +5,7 @@
 >
 > **Estado:** avance parcial
 >
-> **Fecha de corte:** 16 de julio de 2026
+> **Fecha de corte:** 19 de julio de 2026
 
 ## Resumen ejecutivo
 
@@ -19,11 +19,14 @@ El avance actual incluye:
 - normalización de texto y categorías (mayúsculas, caracteres invisibles/NFC y marcadores de ausencia) con bitácora;
 - catálogo territorial reproducible desde un espejo/conversión comunitaria fijado, con INE, Censo 2018 como fuente primaria declarada;
 - variables derivadas con códigos del catálogo territorial, más corrección trazable de 2 variantes tipográficas;
-- detección de duplicados parciales por similitud (RapidFuzz), sin borrado automático;
+- detección y triage reproducible de duplicados parciales por similitud (RapidFuzz), sin borrado automático;
+- validación final reproducible de siete controles, con 3 `cumple`, 4 `requiere_revision` y 0 `falla`;
 - comparación antes/después y reportes de trazabilidad;
+- Code Book maestro reproducible en Markdown y PDF para las 21 variables;
+- auditoría interna de materiales, hashes, contribuciones y bloqueos;
 - planificación explícita del trabajo pendiente y sus responsables.
 
-La salida limpia actual sigue siendo una **versión parcial**. Todavía no se declara libre de todos los problemas porque faltan la revisión humana de los duplicados candidatos, las excepciones telefónicas, la validación automática final y el Code Book.
+La salida limpia actual sigue siendo una **versión parcial**. El triage produjo 718 `duplicado_probable` que requieren confirmación, 366 `independiente` y 271 `revisar`; no hubo fusiones automáticas. La automatización, el reporte y el Code Book Markdown/PDF están completos, pero 251 teléfonos sospechosos vigentes, 145 filas territoriales y cuatro controles conservan revisión institucional pendiente. Como referencia separada, el diagnóstico inicial conserva 201 hallazgos históricos agregados de teléfonos con caracteres no numéricos; esa evidencia no permite afirmar correspondencia registro por registro con el control vigente.
 
 ## Resultados actuales
 
@@ -36,8 +39,11 @@ La salida limpia actual sigue siendo una **versión parcial**. Todavía no se de
 | Columnas del dataset limpio | 21 |
 | Municipios del catálogo oficial (INE) | 340 |
 | Candidatos a duplicado parcial (para revisión) | 1,355 |
+| Triage de duplicados (`duplicado_probable` / `independiente` / `revisar`) | 718 / 366 / 271 |
 | Inconsistencias territoriales documentadas | 7 |
 | Filas en esas parejas, con `decision=revisar` | 145 |
+| Teléfonos sospechosos vigentes (no vacíos distintos de 8 dígitos exactos) | 251 |
+| Hallazgos telefónicos históricos agregados del diagnóstico inicial | 201 |
 | HTML oficiales preservados | 23 |
 
 El dataset limpio parte de 20 columnas, elimina la columna vacía `<NBSP>` (queda en 19) y agrega dos variables derivadas (`departamento_codigo` y `municipio_codigo`), llegando a 21. No se eliminaron establecimientos. Se corrigieron 2 variantes tipográficas en 19 filas; 7 parejas territoriales (145 filas) siguen explícitamente en revisión.
@@ -80,11 +86,16 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 | `docs/diagnostico.md` | Diagnóstico inicial de calidad. |
 | `docs/plan_limpieza.md` | Reglas y riesgos definidos antes de transformar. |
 | `docs/planificacion.md` | Matriz autoritativa de requisitos, pendientes y responsables. |
+| `docs/code_book.md` | Code Book maestro generado para las 21 variables. |
+| `docs/code_book.pdf` | PDF definitivo generado y validado desde el maestro Markdown. |
+| `docs/auditoria_final.md` | Recibo interno de auditoría; no sustituye un material exigido. |
 | `docs/reconciliacion_anggie.md` | Comparación con la fuente secundaria del equipo. |
 | `outputs/tablas/bitacora_limpieza.csv` | Transformaciones aplicadas y filas afectadas. |
-| `outputs/tablas/reporte_calidad_antes_despues.csv` | Comparación antes/después. |
+| `outputs/tablas/reporte_limpieza_base.csv` | Evidencia intermedia emitida atómicamente por la limpieza. |
+| `outputs/tablas/reporte_calidad_antes_despues.csv` | Reporte integral final de exactamente 10 métricas. |
 | `outputs/tablas/duplicados_parciales.csv` | Candidatos a duplicado parcial para revisión humana. |
 | `outputs/tablas/inconsistencias_territoriales.csv` | Parejas departamento–municipio a revisar contra el catálogo. |
+| `outputs/tablas/validacion_final.csv` | Resultado reproducible de los siete controles finales. |
 | `outputs/reportes/duplicados_parciales.md` | Método y resumen de la detección de duplicados. |
 | `outputs/reportes/validacion_territorial.md` | Método y resumen de la validación territorial. |
 | `outputs/reportes/migracion_fuente.md` | Evidencia de integridad de la fuente canónica. |
@@ -95,6 +106,7 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 
 - Python 3.11 o superior.
 - [`uv`](https://docs.astral.sh/uv/) para administrar el entorno y las dependencias.
+- Pandoc, Chromium, qpdf, pdfinfo y pdftotext para generar y validar el PDF.
 
 ### Ejecución
 
@@ -117,8 +129,24 @@ uv run python scripts/limpiar_dataset.py
 # Detectar duplicados parciales (sin borrado automático)
 uv run python scripts/detectar_duplicados.py
 
+# Aplicar/confirmar el triage y actualizar la bitácora idempotentemente
+uv run python scripts/decidir_duplicados.py
+
 # Validar consistencia departamento–municipio contra el catálogo
 uv run python scripts/validar_territorio.py
+
+# Ejecutar los siete controles finales
+uv run python scripts/validar_dataset.py
+
+# Generar las 10 métricas de rúbrica y el resumen de pendientes
+uv run python scripts/generar_reporte_calidad.py
+
+# Ensamblar el Code Book maestro Markdown
+uv run python scripts/generar_code_book.py
+
+# Generar y validar el PDF definitivo
+uv run python scripts/generar_code_book_pdf.py
+
 ```
 
 Las transformaciones pertenecen a `src/proyecto1_ds/`; los archivos de `scripts/` son interfaces de línea de comandos. Los CSV y reportes generados no deben editarse manualmente. La limpieza depende del catálogo territorial, así que ejecútalo antes de `limpiar_dataset.py`.
@@ -136,7 +164,7 @@ La limpieza utiliza reglas deterministas y trazables:
 7. preservación de códigos, teléfonos y otros identificadores como texto;
 8. conservación de nombres, direcciones y valores ambiguos cuando no existe evidencia suficiente para corregirlos.
 
-Cada transformación queda registrada en la bitácora. Las decisiones que requieren revisión humana (duplicados candidatos, teléfonos) permanecen explícitamente pendientes.
+Cada transformación queda registrada en la bitácora. La implementación de reglas y triage está completada; los 271 duplicados ambiguos permanecen explícitamente como revisión institucional/manual pendiente.
 
 ## Estado frente a los requisitos
 
@@ -144,32 +172,31 @@ La evaluación detallada se encuentra en [`docs/planificacion.md`](docs/planific
 
 | Estado | Requisitos |
 |---|---:|
-| Completados | 17 |
-| Parciales | 9 |
-| Faltantes | 3 |
+| Completados | 22 |
+| Parciales | 7 |
+| Faltantes | 0 |
 | Inciertos | 0 |
 | **Total auditado** | **29** |
 
-Los tres faltantes son la validación automática final (7 controles), el Code Book (+PDF) y el ensamblaje del material de entrega.
+No quedan requisitos `Faltante`, pero siete permanecen `Parcial`. La automatización no equivale a aceptación: R5e, R5f, R5g, R7, R9, RE y RT conservan decisiones institucionales o publicación Git pendiente.
 
 ## Organización del equipo
 
 | Integrante | Responsabilidad siguiente |
 |---|---|
-| **Anggie** | Pendiente/no implementado: decisiones sobre duplicados parciales, excepciones telefónicas y su sección del Code Book. |
+| **Anggie** | Reglas y triage implementados (718/366/271), excepciones telefónicas y sección Code Book; falta confirmar 718 probables y revisar 271 ambiguos. |
 | **Iris** | Hecho: catálogo reproducible, consistencia departamento–municipio, normalización, códigos derivados y Code Book territorial de 4 variables. |
-| **Jonathan** | Integración final pendiente: validación, reporte completo, ensamblaje del Code Book Markdown/PDF y auditoría. |
+| **Jonathan** | Validación, reporte, Code Book Markdown/PDF y auditoría interna automatizados; integración actual pendiente de publicación Git. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book.
 
 ## Trabajo pendiente
 
-- revisar los candidatos a duplicados parciales y registrar la decisión de cada caso;
-- resolver excepciones telefónicas y otros formatos ambiguos;
-- ejecutar la validación automática final de toda la rúbrica (7 controles);
-- completar el reporte narrativo de calidad antes/después (10 métricas);
-- construir el Code Book de las 21 variables y exportarlo a PDF;
-- realizar la auditoría final de entrega y contribuciones del equipo.
+- completar la revisión institucional/manual de los 271 pares marcados `revisar`;
+- confirmar institucionalmente los 718 pares `duplicado_probable` antes de cualquier fusión;
+- evaluar institucionalmente los 251 teléfonos sospechosos vigentes, sin normalización destructiva; los 201 hallazgos del diagnóstico inicial son una referencia histórica agregada;
+- aceptar formalmente las 145 filas territoriales provisionales o resolverlas con evidencia oficial;
+- publicar commits identificables de la integración actual.
 
 Ya está hecho en el alcance de Iris: catálogo territorial reproducible, normalización, validación departamento–municipio, códigos derivados y documentación de 4 variables. El espejo no es una publicación primaria oficial; INE, Censo 2018 es la fuente primaria declarada.
 
@@ -186,4 +213,5 @@ Para convertir este README en PDF se puede abrir su vista renderizada en GitHub 
 - [Diagnóstico](docs/diagnostico.md)
 - [Plan de limpieza](docs/plan_limpieza.md)
 - [Planificación y asignaciones](docs/planificacion.md)
+- [Auditoría interna de entrega](docs/auditoria_final.md)
 - [Reconciliación de la fuente secundaria](docs/reconciliacion_anggie.md)

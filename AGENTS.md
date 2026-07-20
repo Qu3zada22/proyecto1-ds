@@ -35,6 +35,19 @@ uv run python scripts/validar_territorio.py
 
 # Aplicar reglas de decisión a candidatos a duplicado (sin borrado automático)
 uv run python scripts/decidir_duplicados.py
+
+# Ejecutar los siete controles finales
+uv run python scripts/validar_dataset.py
+
+# Generar el reporte integral antes/después
+uv run python scripts/generar_reporte_calidad.py
+
+# Ensamblar el Code Book maestro Markdown
+uv run python scripts/generar_code_book.py
+
+# Generar y validar el PDF definitivo
+uv run python scripts/generar_code_book_pdf.py
+
 ```
 
 Antes de entregar cambios, la suite completa debe pasar y `git diff --check` no debe reportar errores nuevos.
@@ -51,6 +64,7 @@ data/source/establecimientos_diversificado_mineduc.csv        │
           ▼                   ▼                               ▼
 docs/diagnostico.md   data/processed/establecimientos_diversificado_limpio.csv
 outputs/tablas/       outputs/tablas/bitacora_limpieza.csv
+                      outputs/tablas/reporte_limpieza_base.csv
                       outputs/tablas/reporte_calidad_antes_despues.csv
                       outputs/tablas/duplicados_parciales.csv
                       outputs/tablas/inconsistencias_territoriales.csv
@@ -62,6 +76,12 @@ Datos de referencia vigentes:
 - Dataset limpio actual: 11,867 filas y 21 columnas (incluye `departamento_codigo` y `municipio_codigo`).
 - Catálogo territorial: `data/reference/catalogo_territorial.csv` (22 departamentos, 340 municipios), derivado de un espejo/conversión comunitaria fijado; INE, Censo 2018 es la fuente primaria declarada, no el espejo.
 - Territorio pendiente: 7 parejas/145 filas conservan `decision=revisar`; 2 variantes tipográficas abarcan 19 filas.
+- Duplicados parciales: triage reproducible de 1,355 pares (718 `duplicado_probable`, 366 `independiente`, 271 `revisar`); los 718 probables requieren confirmación y los 271 ambiguos revisión antes de fusionar.
+- Teléfonos: 251 sospechosos vigentes bajo la regla final (vacío o exactamente 8 dígitos) requieren revisión; 201 es únicamente el conteo histórico agregado del diagnóstico inicial por caracteres no numéricos y no demuestra correspondencia registro por registro.
+- Validación final: 7 controles reproducibles; 3 `cumple`, 4 `requiere_revision` y 0 `falla`.
+- Reporte integral: exactamente 10 métricas de rúbrica con pendientes integrados.
+- Code Book maestro: `docs/code_book.md` ensambla 21 variables y `docs/code_book.pdf` es su salida reproducible validada.
+- Auditoría: `docs/auditoria_final.md` es un recibo interno, no un sexto material exigido.
 - Los 23 HTML y el manifest deben permanecer disponibles para reconstrucción y auditoría.
 
 ## Estructura principal
@@ -111,9 +131,9 @@ Datos de referencia vigentes:
 
 | Responsable | Próximos entregables |
 |---|---|
-| Anggie | Completado: decisiones de duplicados parciales (`scripts/decidir_duplicados.py`), excepciones telefónicas documentadas y sección Code Book en `docs/code_book/variables_anggie.md`. |
+| Anggie | Automatización y triage completados; confirmación de 718 probables, revisión de 271 ambiguos y aceptación telefónica pendientes. |
 | Iris | Hecho: catálogo reproducible, consistencia territorial, normalización, códigos derivados y Code Book territorial de 4 variables. |
-| Jonathan | Integración final pendiente: validación, reporte completo, README, ensamblaje del Code Book Markdown/PDF y auditoría. |
+| Jonathan | Validación, reporte, Code Book Markdown/PDF y auditoría interna automatizados; publicación Git pendiente. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book. Los entregables futuros continúan como **planificados/no implementados** hasta que exista evidencia de aceptación.
 

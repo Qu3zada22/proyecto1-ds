@@ -15,6 +15,7 @@ import unicodedata
 DEFAULT_SOURCE_CSV = Path("data/source/establecimientos_diversificado_mineduc.csv")
 DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.csv")
 DEFAULT_TABLES_DIR = Path("outputs/tablas")
+BASE_REPORT_FILENAME = "reporte_limpieza_base.csv"
 NBSP = "\xa0"
 MISSING_MARKERS = {"", "n/a", "na", "null", "none", "-", ".", "sin dato", "----"}
 # Texto y categóricas que se canonizan a MAYÚSCULAS; excluye identificadores y procedencia.
@@ -120,7 +121,7 @@ def write_cleaning_outputs(
     guard_root = _output_guard_root(clean_path, tables_root, project_root)
     clean_path, tables_root, guard_root = _validate_output_roots(clean_path, tables_root, guard_root)
     log_path = tables_root / "bitacora_limpieza.csv"
-    report_path = tables_root / "reporte_calidad_antes_despues.csv"
+    report_path = tables_root / BASE_REPORT_FILENAME
     for output_file in (clean_path, log_path, report_path):
         _require_output_csv_file(output_file)
     output_specs: list[tuple[Path, Callable[[TextIO], None]]] = [

@@ -53,6 +53,9 @@ def test_cli_limpia_fuente_default_y_escribe_salidas_permitidas(tmp_path, capsys
     original_interim = interim_csv.read_bytes()
     cli = _load_cli_module()
     cli.ROOT = tmp_path
+    integral = tmp_path / "outputs/tablas/reporte_calidad_antes_despues.csv"
+    integral.parent.mkdir(parents=True)
+    integral.write_bytes(b"reporte integral previo\n")
 
     exit_code = cli.main([])
 
@@ -65,7 +68,8 @@ def test_cli_limpia_fuente_default_y_escribe_salidas_permitidas(tmp_path, capsys
     assert interim_csv.read_bytes() == original_interim
     assert clean_csv.exists()
     assert (tables_dir / "bitacora_limpieza.csv").exists()
-    assert (tables_dir / "reporte_calidad_antes_despues.csv").exists()
+    assert (tables_dir / "reporte_limpieza_base.csv").exists()
+    assert integral.read_bytes() == b"reporte integral previo\n"
 
 
 def test_cli_reporta_entrada_ausente_sin_traceback_ni_parciales(tmp_path, capsys):
@@ -127,7 +131,7 @@ def test_cli_rechaza_catalogo_invalido_sin_alterar_fuente_ni_salidas(tmp_path, c
     outputs = [
         tmp_path / "data/processed/establecimientos_diversificado_limpio.csv",
         tmp_path / "outputs/tablas/bitacora_limpieza.csv",
-        tmp_path / "outputs/tablas/reporte_calidad_antes_despues.csv",
+        tmp_path / "outputs/tablas/reporte_limpieza_base.csv",
     ]
     for output in outputs:
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -274,7 +278,7 @@ def test_cli_permite_archivo_csv_valido_bajo_data_processed(tmp_path, capsys):
     assert captured.err == ""
     assert clean_csv.is_file()
     assert (tmp_path / "outputs" / "tablas" / "bitacora_limpieza.csv").exists()
-    assert (tmp_path / "outputs" / "tablas" / "reporte_calidad_antes_despues.csv").exists()
+    assert (tmp_path / "outputs" / "tablas" / "reporte_limpieza_base.csv").exists()
 
 
 def test_cli_reporta_error_de_escritura_sin_traceback(tmp_path, capsys, monkeypatch):

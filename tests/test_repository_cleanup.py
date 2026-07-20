@@ -114,7 +114,7 @@ def test_estado_final_elimina_allowlist_rastreada_y_preserva_protegidos():
         "data/source/establecimientos_diversificado_mineduc.csv": "c83ac119326279b67acbbca5c9d1cada6877bb56526c76c1461fdc9b3bded82f",
         "data/reference/catalogo_territorial.csv": "64b86ba51f813d0ce6806a3a948af34e5d5a5ad8425ed62f0e0e1d72a53387f2",
         "data/processed/establecimientos_diversificado_limpio.csv": "32414cc3bf68744923ef8d51758e0c863713d6fd3a39b449f37ac04923fb6a8c",
-        "outputs/tablas/bitacora_limpieza.csv": "2f803138594fa619aff34392b1efa25d9e7a723668da0e76381dfd9b82add4d2",
+        "outputs/tablas/bitacora_limpieza.csv": "3c5911720a5e8931ecefd86791eb605ba0fab2e45f396e7ef872070fcb603aad",
         "outputs/tablas/diagnostico_columnas.csv": "e41123edcb09b3ae78cbf6f8555d317d0f55f222ce2132db70a5de1d1f06d69f",
         "outputs/tablas/dominios_observados.csv": "c95d4905a15854653a64b720bcc956c2151d2dda3569ee33de0de60fa1896f19",
         "outputs/tablas/duplicados_exactos.csv": "81cc2a2a3e2c9afa93030cd73e31966889297b9cd65730683ef40915e0f89bd3",
@@ -222,6 +222,8 @@ def test_documentacion_refleja_el_cierre_territorial_sin_cerrar_el_proyecto():
 
     for document in (plan, readme, agents):
         assert "Anggie" in document
-        assert "pendiente/no implementado" in document.lower()
         assert "Jonathan" in document
         assert "integración final pendiente" in document.lower()
+    # Anggie completó sus entregables; el trabajo de Jonathan sigue pendiente.
+    assert "completado" in agents.lower() or "completado" in plan.lower()
+    assert "pendiente/no implementado" in plan.lower()

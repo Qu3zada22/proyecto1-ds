@@ -32,6 +32,9 @@ uv run python scripts/limpiar_dataset.py
 # Detectar duplicados parciales y validar territorio (sin corrección automática)
 uv run python scripts/detectar_duplicados.py
 uv run python scripts/validar_territorio.py
+
+# Aplicar reglas de decisión a candidatos a duplicado (sin borrado automático)
+uv run python scripts/decidir_duplicados.py
 ```
 
 Antes de entregar cambios, la suite completa debe pasar y `git diff --check` no debe reportar errores nuevos.
@@ -108,7 +111,7 @@ Datos de referencia vigentes:
 
 | Responsable | Próximos entregables |
 |---|---|
-| Anggie | Pendiente/no implementado: decisiones de duplicados parciales, excepciones telefónicas y su sección del Code Book. |
+| Anggie | Completado: decisiones de duplicados parciales (`scripts/decidir_duplicados.py`), excepciones telefónicas documentadas y sección Code Book en `docs/code_book/variables_anggie.md`. |
 | Iris | Hecho: catálogo reproducible, consistencia territorial, normalización, códigos derivados y Code Book territorial de 4 variables. |
 | Jonathan | Integración final pendiente: validación, reporte completo, README, ensamblaje del Code Book Markdown/PDF y auditoría. |
 

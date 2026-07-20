@@ -1,4 +1,4 @@
-"""Detección de duplicados parciales por similitud, sin borrado automático."""
+"""Detección y decisión de duplicados parciales por similitud, sin borrado automático."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from rapidfuzz import fuzz
 
 
 DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.csv")
+DEFAULT_CANDIDATES_CSV = Path("outputs/tablas/duplicados_parciales.csv")
 DEFAULT_TABLES_DIR = Path("outputs/tablas")
 DEFAULT_REPORTS_DIR = Path("outputs/reportes")
 NAME_THRESHOLD = 90.0
@@ -121,6 +122,62 @@ def detect_partial_duplicates(
         "decision_por_defecto": "revisar (sin borrado automático)",
     }
     return DuplicateReport(source_path=source_path, threshold=threshold, candidates=candidates, summary=summary)
+
+
+@dataclass(frozen=True)
+class DecisionSummary:
+    candidates_path: Path
+    duplicado_probable: int
+    independiente: int
+    revisar: int
+    total: int
+
+
+def apply_duplicate_decisions(
+    candidates_csv: Path | str = DEFAULT_CANDIDATES_CSV,
+) -> DecisionSummary:
+    """Aplica reglas documentadas al CSV de candidatos y actualiza la columna `decision`.
+
+    Reglas (sin borrado automático):
+    - duplicado_probable: confianza == "alta" (dirección Y teléfono coinciden).
+    - independiente: confianza == "media" Y ambos teléfonos no vacíos Y distintos.
+    - revisar: todos los demás pares (ambiguos; requieren revisión humana).
+
+    Escribe el CSV actualizado en la misma ruta de entrada.
+    """
+    path = Path(candidates_csv)
+    try:
+        with path.open(newline="", encoding="utf-8") as csv_file:
+            reader = csv.DictReader(csv_file)
+            if reader.fieldnames is None:
+                raise DuplicatesCsvError(f"CSV de candidatos vacío: {path}")
+            rows = list(reader)
+    except csv.Error as exc:
+        raise DuplicatesCsvError(f"CSV de candidatos malformado: {path}: {exc}") from exc
+
+    counts = {"duplicado_probable": 0, "independiente": 0, "revisar": 0}
+    updated: list[dict[str, Any]] = []
+    for row in rows:
+        confianza = row.get("confianza", "")
+        tel_a = row.get("telefono_a", "")
+        tel_b = row.get("telefono_b", "")
+        if confianza == "alta":
+            decision = "duplicado_probable"
+        elif confianza == "media" and tel_a and tel_b and tel_a != tel_b:
+            decision = "independiente"
+        else:
+            decision = "revisar"
+        counts[decision] += 1
+        updated.append({**row, "decision": decision})
+
+    _write_rows(path, CANDIDATE_FIELDS, updated)
+    return DecisionSummary(
+        candidates_path=path,
+        duplicado_probable=counts["duplicado_probable"],
+        independiente=counts["independiente"],
+        revisar=counts["revisar"],
+        total=len(updated),
+    )
 
 
 def write_duplicate_outputs(

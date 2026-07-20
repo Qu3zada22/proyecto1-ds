@@ -11,6 +11,8 @@ import stat
 from typing import Any, Callable, TextIO
 import unicodedata
 
+from proyecto1_ds.decisions import DecisionManifestError, load_phone_decisions
+
 
 DEFAULT_SOURCE_CSV = Path("data/source/establecimientos_diversificado_mineduc.csv")
 DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.csv")
@@ -78,7 +80,11 @@ class _OutputWritePlan:
     writer: Callable[[TextIO], None]
 
 
-def clean_dataset(source_csv: Path | str = DEFAULT_SOURCE_CSV) -> CleaningResult:
+def clean_dataset(
+    source_csv: Path | str = DEFAULT_SOURCE_CSV,
+    *,
+    phone_decisions_csv: Path | str | None = None,
+) -> CleaningResult:
     """Limpia el CSV fuente con reglas determinísticas y conservadoras."""
 
     source_path = Path(source_csv)
@@ -91,7 +97,29 @@ def clean_dataset(source_csv: Path | str = DEFAULT_SOURCE_CSV) -> CleaningResult
         header = [column for column in header if column != NBSP]
         normalized_rows = [{column: value for column, value in row.items() if column != NBSP} for row in normalized_rows]
     log_rows.extend(_normalization_log(original_header, raw_rows, normalized_rows, removed_nbsp=nbsp_status == "removed"))
-    report_rows = _quality_report(original_header, header, raw_rows, normalized_rows, log_rows, nbsp_status)
+    approved_phones = 0
+    if phone_decisions_csv is not None:
+        decisions = load_phone_decisions(phone_decisions_csv, normalized_rows)
+        approved_phones = len(decisions)
+        normalized_rows = [
+            {**row, "TELEFONO": decisions[row["CODIGO"]]["normalizado"]} if row.get("CODIGO") in decisions else row
+            for row in normalized_rows
+        ]
+        if approved_phones:
+            log_rows.append(
+                _log_row(
+                    variable="TELEFONO",
+                    rule="normalizar_telefono_aprobado",
+                    affected=approved_phones,
+                    justification="Normalizaciones exactas aprobadas por el mantenedor; no se aplican reglas genéricas.",
+                    risk="bajo",
+                    evidence="data/decisions/telefonos_aprobados.csv",
+                )
+            )
+    report_rows = _quality_report(
+        original_header, header, raw_rows, normalized_rows, log_rows, nbsp_status,
+        approved_phones=approved_phones,
+    )
     return CleaningResult(
         source_path=source_path,
         original_header=original_header,
@@ -553,6 +581,8 @@ def _quality_report(
     clean_rows: list[dict[str, str]],
     log_rows: list[dict[str, str]],
     nbsp_status: str,
+    *,
+    approved_phones: int = 0,
 ) -> list[dict[str, str]]:
     report = [
         _report_row(
@@ -643,6 +673,17 @@ def _quality_report(
             ),
         ]
     )
+    if approved_phones:
+        report.append(
+            _report_row(
+                metrica="telefonos_aprobados_normalizados",
+                variable="TELEFONO",
+                before=approved_phones,
+                after=0,
+                status="ejecutado",
+                note="Decisiones exactas aplicadas desde data/decisions/telefonos_aprobados.csv.",
+            )
+        )
     return report
 
 

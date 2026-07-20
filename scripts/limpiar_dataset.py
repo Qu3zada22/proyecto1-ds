@@ -22,6 +22,7 @@ from proyecto1_ds.cleaning import (  # noqa: E402
     write_cleaning_outputs,
 )
 from proyecto1_ds.enrichment import DEFAULT_CATALOG_CSV, EnrichmentError, enrich_result  # noqa: E402
+from proyecto1_ds.decisions import DEFAULT_PHONE_DECISIONS_CSV, DecisionManifestError  # noqa: E402
 
 
 class CleaningCliError(RuntimeError):
@@ -33,6 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--source-csv", type=Path, default=ROOT / DEFAULT_SOURCE_CSV)
     parser.add_argument("--output-file", type=Path, default=ROOT / DEFAULT_CLEAN_CSV)
     parser.add_argument("--tables-dir", type=Path, default=ROOT / DEFAULT_TABLES_DIR)
+    parser.add_argument("--phone-decisions-csv", type=Path, default=ROOT / DEFAULT_PHONE_DECISIONS_CSV)
     return parser
 
 
@@ -45,7 +47,8 @@ def main(argv: list[str] | None = None) -> int:
         source_csv = _resolve_source_csv(args.source_csv)
         output_file = _resolve_output_file(args.output_file)
         tables_dir = _resolve_tables_dir(args.tables_dir)
-        result = clean_dataset(source_csv)
+        phone_decisions = _resolve_decisions_csv(args.phone_decisions_csv)
+        result = clean_dataset(source_csv, phone_decisions_csv=phone_decisions)
         result = enrich_result(result, catalog_csv=ROOT / DEFAULT_CATALOG_CSV)
         outputs = write_cleaning_outputs(
             result,
@@ -53,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
             tables_dir=tables_dir,
             project_root=ROOT,
         )
-    except (CleaningCliError, CleaningCsvError, CleaningOutputError, EnrichmentError, OSError, csv.Error) as exc:
+    except (CleaningCliError, CleaningCsvError, CleaningOutputError, DecisionManifestError, EnrichmentError, OSError, csv.Error) as exc:
         print(f"Error de limpieza: {exc}", file=sys.stderr)
         return 1
     print(f"Dataset limpio generado: {outputs.clean_csv_path}")
@@ -109,6 +112,14 @@ def _resolve_tables_dir(tables_dir: Path) -> Path:
     destination = tables_dir.resolve()
     if destination != tables_root and tables_root not in destination.parents:
         raise CleaningCliError(f"--tables-dir debe estar dentro de outputs/tablas: {tables_dir}")
+    return destination
+
+
+def _resolve_decisions_csv(path: Path) -> Path:
+    decisions_root = (ROOT / "data/decisions").resolve()
+    destination = path.resolve()
+    if destination != decisions_root and decisions_root not in destination.parents:
+        raise CleaningCliError(f"--phone-decisions-csv debe estar dentro de data/decisions: {path}")
     return destination
 
 

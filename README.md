@@ -5,7 +5,7 @@
 >
 > **Estado:** avance parcial
 >
-> **Fecha de corte:** 19 de julio de 2026
+> **Fecha de corte:** 20 de julio de 2026
 
 ## Resumen ejecutivo
 
@@ -20,13 +20,14 @@ El avance actual incluye:
 - catálogo territorial reproducible desde un espejo/conversión comunitaria fijado, con INE, Censo 2018 como fuente primaria declarada;
 - variables derivadas con códigos del catálogo territorial, más corrección trazable de 2 variantes tipográficas;
 - detección y triage reproducible de duplicados parciales por similitud (RapidFuzz), sin borrado automático;
+- recomendaciones reproducibles para los pendientes de duplicados, teléfonos y territorio, sin aplicar cambios;
 - validación final reproducible de siete controles, con 3 `cumple`, 4 `requiere_revision` y 0 `falla`;
 - comparación antes/después y reportes de trazabilidad;
 - Code Book maestro reproducible en Markdown y PDF para las 21 variables;
 - auditoría interna de materiales, hashes, contribuciones y bloqueos;
 - planificación explícita del trabajo pendiente y sus responsables.
 
-La salida limpia actual sigue siendo una **versión parcial**. El triage produjo 718 `duplicado_probable` que requieren confirmación, 366 `independiente` y 271 `revisar`; no hubo fusiones automáticas. La automatización, el reporte y el Code Book Markdown/PDF están completos, pero 251 teléfonos sospechosos vigentes, 145 filas territoriales y cuatro controles conservan revisión institucional pendiente. Como referencia separada, el diagnóstico inicial conserva 201 hallazgos históricos agregados de teléfonos con caracteres no numéricos; esa evidencia no permite afirmar correspondencia registro por registro con el control vigente.
+La salida limpia actual sigue siendo una **versión parcial** y el proyecto permanece **NO APTO PARA CIERRE INSTITUCIONAL**. La aprobación versionada dejó 11 pares como `independiente_confirmado`, sin fusión ni borrado, y aplicó 6 normalizaciones telefónicas exactas. Permanecen 978 pares pendientes (718 `duplicado_probable` + 260 `revisar`), 245 teléfonos sospechosos y 145 filas territoriales. Las recomendaciones restantes no equivalen a aprobación institucional.
 
 ## Resultados actuales
 
@@ -39,10 +40,10 @@ La salida limpia actual sigue siendo una **versión parcial**. El triage produjo
 | Columnas del dataset limpio | 21 |
 | Municipios del catálogo oficial (INE) | 340 |
 | Candidatos a duplicado parcial (para revisión) | 1,355 |
-| Triage de duplicados (`duplicado_probable` / `independiente` / `revisar`) | 718 / 366 / 271 |
+| Duplicados (`duplicado_probable` / `independiente` / `revisar` / `independiente_confirmado`) | 718 / 366 / 260 / 11 |
 | Inconsistencias territoriales documentadas | 7 |
 | Filas en esas parejas, con `decision=revisar` | 145 |
-| Teléfonos sospechosos vigentes (no vacíos distintos de 8 dígitos exactos) | 251 |
+| Teléfonos sospechosos vigentes (no vacíos distintos de 8 dígitos exactos) | 245 |
 | Hallazgos telefónicos históricos agregados del diagnóstico inicial | 201 |
 | HTML oficiales preservados | 23 |
 
@@ -82,6 +83,8 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 | `data/processed/establecimientos_diversificado_limpio.csv` | Dataset limpio y enriquecido con códigos derivados del catálogo. |
 | `data/reference/catalogo_territorial.csv` | Catálogo derivado de un espejo comunitario fijado; INE, Censo 2018 es la fuente primaria declarada. |
 | `data/raw/manifest.json` | Inventario, cobertura y checksums de las fuentes. |
+| `data/decisions/duplicados_aprobados.csv` | Once decisiones explícitas `independiente_confirmado`. |
+| `data/decisions/telefonos_aprobados.csv` | Seis normalizaciones telefónicas exactas aprobadas. |
 | `docs/fuentes_datos.md` | Explicación detallada de la adquisición y procedencia. |
 | `docs/diagnostico.md` | Diagnóstico inicial de calidad. |
 | `docs/plan_limpieza.md` | Reglas y riesgos definidos antes de transformar. |
@@ -95,10 +98,14 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 | `outputs/tablas/reporte_calidad_antes_despues.csv` | Reporte integral final de exactamente 10 métricas. |
 | `outputs/tablas/duplicados_parciales.csv` | Candidatos a duplicado parcial para revisión humana. |
 | `outputs/tablas/inconsistencias_territoriales.csv` | Parejas departamento–municipio a revisar contra el catálogo. |
+| `outputs/tablas/recomendaciones_duplicados.csv` | Recomendación conservadora para cada uno de los 978 pares pendientes. |
+| `outputs/tablas/recomendaciones_telefonos.csv` | Clasificación de los 245 teléfonos todavía sospechosos. |
+| `outputs/tablas/recomendaciones_territorio.csv` | Siete aliases auditables que representan 145 filas, sin renombre automático. |
 | `outputs/tablas/validacion_final.csv` | Resultado reproducible de los siete controles finales. |
 | `outputs/reportes/duplicados_parciales.md` | Método y resumen de la detección de duplicados. |
 | `outputs/reportes/validacion_territorial.md` | Método y resumen de la validación territorial. |
 | `outputs/reportes/migracion_fuente.md` | Evidencia de integridad de la fuente canónica. |
+| `outputs/reportes/revision_pendientes.md` | Resumen legible de reglas, conteos y límites institucionales. |
 
 ## Reproducibilidad
 
@@ -135,6 +142,9 @@ uv run python scripts/decidir_duplicados.py
 # Validar consistencia departamento–municipio contra el catálogo
 uv run python scripts/validar_territorio.py
 
+# Generar recomendaciones sin modificar ni fusionar datasets
+uv run python scripts/revisar_pendientes.py
+
 # Ejecutar los siete controles finales
 uv run python scripts/validar_dataset.py
 
@@ -164,7 +174,7 @@ La limpieza utiliza reglas deterministas y trazables:
 7. preservación de códigos, teléfonos y otros identificadores como texto;
 8. conservación de nombres, direcciones y valores ambiguos cuando no existe evidencia suficiente para corregirlos.
 
-Cada transformación queda registrada en la bitácora. La implementación de reglas y triage está completada; los 271 duplicados ambiguos permanecen explícitamente como revisión institucional/manual pendiente.
+Cada transformación queda registrada en la bitácora. La implementación de reglas y triage está completada; 11 pares fueron aprobados como independientes y los 260 ambiguos restantes conservan revisión institucional/manual pendiente.
 
 ## Estado frente a los requisitos
 
@@ -184,7 +194,7 @@ No quedan requisitos `Faltante`, pero seis permanecen `Parcial`. La automatizaci
 
 | Integrante | Responsabilidad siguiente |
 |---|---|
-| **Anggie** | Reglas y triage implementados (718/366/271), excepciones telefónicas y sección Code Book; falta confirmar 718 probables y revisar 271 ambiguos. |
+| **Anggie** | Reglas y triage implementados; 11 independientes y 6 teléfonos aprobados; faltan 718 probables, 260 ambiguos y 245 teléfonos. |
 | **Iris** | Hecho: catálogo reproducible, consistencia departamento–municipio, normalización, códigos derivados y Code Book territorial de 4 variables. |
 | **Jonathan** | Validación, reporte, Code Book Markdown/PDF y auditoría interna publicados en la integración `c871bd7`. |
 
@@ -192,10 +202,9 @@ Cada integrante cuenta con commits identificables publicados y una sección conc
 
 ## Trabajo pendiente
 
-- completar la revisión institucional/manual de los 271 pares marcados `revisar`;
-- confirmar institucionalmente los 718 pares `duplicado_probable` antes de cualquier fusión;
-- evaluar institucionalmente los 251 teléfonos sospechosos vigentes, sin normalización destructiva; los 201 hallazgos del diagnóstico inicial son una referencia histórica agregada;
-- aceptar formalmente las 145 filas territoriales provisionales o resolverlas con evidencia oficial;
+- obtener fuente institucional para los 978 pares pendientes; los 11 independientes aprobados permanecen separados;
+- revisar institucionalmente los 245 teléfonos restantes; las 6 normalizaciones exactas ya fueron aplicadas;
+- aceptar formalmente los aliases de las 145 filas territoriales; el texto MINEDUC permanece sin renombre;
 
 Ya está hecho en el alcance de Iris: catálogo territorial reproducible, normalización, validación departamento–municipio, códigos derivados y documentación de 4 variables. El espejo no es una publicación primaria oficial; INE, Censo 2018 es la fuente primaria declarada.
 

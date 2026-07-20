@@ -19,12 +19,12 @@ Generado por código sobre `data/processed/establecimientos_diversificado_limpio
 - Candidatos a duplicado parcial: 1355
 - Confianza alta: 718
 - Confianza media: 637
-- Variantes de misma sede con distinta oferta (no duplicados): 7046
+- Variantes de misma sede con distinta oferta (no duplicados): 7047
 - Duplicado probable: 718
 - Independiente: 366
-- Revisión institucional/manual pendiente: 271
+- Revisión institucional/manual pendiente: 260
 - Duplicados confirmados manualmente: 0
-- Independientes confirmados manualmente: 0
+- Independientes confirmados manualmente: 11
 - Revisión institucional explícita: 0
 
 ## Salida

@@ -75,13 +75,14 @@ def test_caso_real_conserva_conteos_y_unidades_explicitas():
     rows = {row["control"]: row for row in result.rows}
 
     assert (result.source_rows, result.source_columns) == (11_867, 21)
-    assert (rows["duplicados_exactos"]["estado"], rows["duplicados_exactos"]["conteo"]) == ("requiere_revision", "989 pares")
+    assert (rows["duplicados_exactos"]["estado"], rows["duplicados_exactos"]["conteo"]) == ("requiere_revision", "978 pares")
     assert "718 duplicado_probable" in rows["duplicados_exactos"]["detalle"]
-    assert "271 revisar" in rows["duplicados_exactos"]["detalle"]
-    assert rows["formato_telefonos"]["conteo"] == "251 registros"
+    assert "260 revisar" in rows["duplicados_exactos"]["detalle"]
+    assert "11 independiente_confirmado" in rows["duplicados_exactos"]["detalle"]
+    assert rows["formato_telefonos"]["conteo"] == "245 registros"
     assert rows["catalogo_territorial"]["conteo"] == "145 filas"
-    assert rows["valores_invalidos_diagnosticados"]["conteo"] == "396 hallazgos"
-    assert "251 teléfonos vigentes + 145 filas territoriales" in rows["valores_invalidos_diagnosticados"]["detalle"]
+    assert rows["valores_invalidos_diagnosticados"]["conteo"] == "390 hallazgos"
+    assert "245 teléfonos vigentes + 145 filas territoriales" in rows["valores_invalidos_diagnosticados"]["detalle"]
     assert "data/processed/establecimientos_diversificado_limpio.csv" in rows["valores_invalidos_diagnosticados"]["evidencia"]
     assert "201" not in rows["valores_invalidos_diagnosticados"]["detalle"]
     assert "texto" in rows["tipos_esperados"]["detalle"]

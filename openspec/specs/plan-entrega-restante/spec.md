@@ -86,7 +86,7 @@ Código, CLI, pruebas, docs y specs MUST usar `data/source/` como fuente y `data
 
 ### Requirement: Validación final reproducible
 
-El sistema MUST evaluar exactamente los siete controles del paso 7 y publicar `outputs/tablas/validacion_final.csv` con estado `cumple`, `requiere_revision` o `falla`, conteo con unidad y evidencia portable. MUST conservar como revisión los 718 duplicados probables, 271 ambiguos, 251 teléfonos sospechosos vigentes y 145 filas territoriales. MUST distinguir esos 251 del conteo histórico agregado de 201 hallazgos telefónicos del diagnóstico inicial y MUST NOT inferir correspondencia registro por registro. Los datasets finales header-only y conteos negativos MUST fallar sin publicación.
+El sistema MUST evaluar exactamente los siete controles del paso 7 y publicar `outputs/tablas/validacion_final.csv` con estado `cumple`, `requiere_revision` o `falla`, conteo con unidad y evidencia portable. MUST conservar como revisión 718 duplicados probables, 260 ambiguos, 245 teléfonos sospechosos vigentes y 145 filas territoriales; MUST registrar 11 independientes y 6 teléfonos aprobados. MUST distinguir los 245 vigentes del conteo histórico agregado de 201 y MUST NOT inferir correspondencia registro por registro.
 
 #### Scenario: validación con pendientes conocidos
 - DADO el dataset limpio y las evidencias vigentes
@@ -107,7 +107,7 @@ La limpieza MUST publicar su evidencia intermedia en `reporte_limpieza_base.csv`
 #### Scenario: reporte real reproducible
 - DADO fuente, limpio, diagnóstico, bitácora, duplicados, territorio y validación
 - CUANDO se ejecuta `scripts/generar_reporte_calidad.py`
-- ENTONCES genera exactamente diez filas e integra 718 probables, 271 ambiguos, 251 teléfonos sospechosos vigentes y 145 filas pendientes; 201 permanece etiquetado como diagnóstico histórico agregado.
+- ENTONCES genera exactamente diez filas e integra 978 pares, 245 teléfonos sospechosos vigentes y 145 filas pendientes; 201 permanece etiquetado como diagnóstico histórico agregado.
 
 #### Scenario: evidencia inválida
 - DADO un insumo ausente o malformado y un reporte previo
@@ -121,7 +121,7 @@ El sistema MUST ensamblar `docs/code_book.md` desde las secciones canónicas de 
 #### Scenario: ensamblado reproducible
 - DADO ambas secciones válidas y el dataset limpio
 - CUANDO se ejecuta `scripts/generar_code_book.py`
-- ENTONCES publica atómicamente 21 variables sin ocultar 271 pares, 251 teléfonos sospechosos vigentes ni 145 filas pendientes, y conserva 201 como referencia histórica agregada del diagnóstico inicial.
+- ENTONCES publica atómicamente 21 variables sin ocultar 978 pares, 245 teléfonos sospechosos vigentes ni 145 filas pendientes, y conserva 201 como referencia histórica agregada.
 
 #### Scenario: fuente inválida
 - DADO una fuente ausente, incompleta, duplicada o desordenada y un maestro previo

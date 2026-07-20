@@ -81,7 +81,7 @@ Esta sección cubre las **17 variables operativas y de trazabilidad** del datase
   - Normalización de NBSP y espacios múltiples (8 filas).
   - Marcadores de ausencia convertidos a vacío (946 filas).
 - **Referencia histórica del diagnóstico inicial:** 201 hallazgos agregados con caracteres no-dígito. No identifica necesariamente las mismas filas del control vigente.
-- **Pendiente operativo vigente:** 251 teléfonos sospechosos bajo la regla estricta; incluye además 50 valores numéricos con longitud distinta de 8. La evidencia histórica agregada no permite establecer correspondencia registro por registro.
+- **Pendiente operativo vigente:** 245 teléfonos sospechosos bajo la regla estricta tras aplicar 6 normalizaciones exactas aprobadas; incluye 50 valores numéricos con longitud distinta de 8. La evidencia histórica agregada no permite establecer correspondencia registro por registro.
   - **Múltiples teléfonos separados por `-`**: ej. `24328801-24329098`, `77648506-45419234-41177068`. Representa varios contactos del establecimiento; se conserva como texto íntegro.
   - **Múltiples teléfonos separados por `,`**: ej. `3325732, 2320075, 2307014`. Mismo caso anterior.
   - **Texto auxiliar**: ej. `25763, 26725 Y 21568`. Texto aclaratorio conservado sin modificación.
@@ -265,10 +265,11 @@ La detección produjo 1,355 pares candidatos. Las reglas aplicadas sin borrado a
 |---|---|---|---|
 | `duplicado_probable` | `confianza == "alta"` (dirección Y teléfono coinciden) | 718 | Evidencia estructural máxima; requieren validación institucional antes de cualquier fusión. |
 | `independiente` | `confianza == "media"` Y ambos teléfonos no vacíos Y distintos | 366 | Teléfonos diferentes sugieren establecimientos distintos. |
-| `revisar` | Resto (ambiguos: mismo teléfono pero distinta dirección, o teléfonos vacíos) | 271 | Requieren revisión humana. |
+| `revisar` | Resto (ambiguos: mismo teléfono pero distinta dirección, o teléfonos vacíos) | 260 | Requieren revisión humana. |
+| `independiente_confirmado` | Decisión explícita en `data/decisions/duplicados_aprobados.csv` | 11 | Se conservan separados; no implica fusión ni borrado. |
 
 Evidencia: `outputs/tablas/duplicados_parciales.csv` · `src/proyecto1_ds/duplicates.py` · `scripts/decidir_duplicados.py`.
 
-El triage determinista está completado, pero los 718 pares `duplicado_probable` requieren confirmación institucional antes de cualquier fusión y los 271 pares con `decision=revisar` conservan revisión manual pendiente. No se eliminó ni fusionó ningún establecimiento. La regeneración preserva decisiones vigentes por el par estable de códigos; los pares nuevos reciben las reglas de triage documentadas.
+El triage determinista está completado: 11 pares son `independiente_confirmado`; los 718 `duplicado_probable` y 260 `revisar` permanecen pendientes. No se eliminó ni fusionó ningún establecimiento. La regeneración reaplica el manifiesto por el par estable de códigos.
 
 Decisiones manuales permitidas: `duplicado_confirmado`, `independiente_confirmado` y `revisar_institucional`. Cualquier otra etiqueta se rechaza; una decisión solo documenta el caso y nunca fusiona ni elimina filas.

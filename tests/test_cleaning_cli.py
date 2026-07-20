@@ -35,6 +35,9 @@ def _write_interim_csv(path: Path) -> None:
         writer = csv.writer(csv_file)
         writer.writerow(["CODIGO", "DIRECTOR", "DEPARTAMENTO", "MUNICIPIO", "\xa0"])
         writer.writerow(["001", " SIN DATO ", "GUATEMALA", "GUATEMALA", ""])
+    decisions = path.parents[2] / "data/decisions/telefonos_aprobados.csv"
+    decisions.parent.mkdir(parents=True, exist_ok=True)
+    decisions.write_text("CODIGO,original,normalizado,razon,aprobador,fecha\n", encoding="utf-8")
 
 
 def _write_valid_catalog(root: Path) -> None:
@@ -179,7 +182,7 @@ def test_cli_rechaza_data_source_symlink_a_directorio_externo_sin_crear_salidas(
     outside_csv = outside_interim / "establecimientos_diversificado_mineduc.csv"
     _write_interim_csv(outside_csv)
     data_dir = tmp_path / "data"
-    data_dir.mkdir()
+    data_dir.mkdir(exist_ok=True)
     symlinked_interim = data_dir / "source"
     symlinked_interim.symlink_to(outside_interim, target_is_directory=True)
     cli = _load_cli_module()

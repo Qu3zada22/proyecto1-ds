@@ -12,6 +12,8 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
+from proyecto1_ds.decisions import load_duplicate_decisions
+
 
 DEFAULT_CLEAN_CSV = Path("data/processed/establecimientos_diversificado_limpio.csv")
 DEFAULT_CANDIDATES_CSV = Path("outputs/tablas/duplicados_parciales.csv")
@@ -150,6 +152,7 @@ def apply_duplicate_decisions(
     candidates_csv: Path | str = DEFAULT_CANDIDATES_CSV,
     *,
     bitacora_csv: Path | str | None = None,
+    decisions_csv: Path | str | None = None,
 ) -> DecisionSummary:
     """Aplica reglas documentadas al CSV de candidatos y actualiza la columna `decision`.
 
@@ -172,6 +175,7 @@ def apply_duplicate_decisions(
     except csv.Error as exc:
         raise DuplicatesCsvError(f"CSV de candidatos malformado: {path}: {exc}") from exc
 
+    approved = load_duplicate_decisions(decisions_csv, rows) if decisions_csv is not None else {}
     counts = {decision: 0 for decision in VALID_DECISIONS}
     updated: list[dict[str, Any]] = []
     for row in rows:
@@ -181,6 +185,8 @@ def apply_duplicate_decisions(
         decision = previous if previous in MANUAL_DECISIONS else _classify_decision(
             row.get("confianza", ""), row.get("telefono_a", ""), row.get("telefono_b", "")
         )
+        if (key := _pair_key(row)) in approved:
+            decision = approved[key]["decision"]
         counts[decision] += 1
         updated.append({**row, "decision": decision})
 
@@ -305,11 +311,12 @@ def _decision_log_row(summary: DecisionSummary) -> dict[str, str]:
             "Reglas de decisión aplicadas sin borrado automático: "
             f"duplicado_probable={summary.duplicado_probable} (confianza alta), "
             f"independiente={summary.independiente} (media + teléfonos distintos), "
-            f"revisar={summary.revisar} (ambiguos)."
+            f"revisar={summary.revisar} (ambiguos), manuales={summary.manuales}."
         ),
         "riesgo": "bajo",
         "evidencia_fuente": (
             "docs/planificacion.md; outputs/tablas/duplicados_parciales.csv; "
+            "data/decisions/duplicados_aprobados.csv; "
             "src/proyecto1_ds/duplicates.py apply_duplicate_decisions"
         ),
     }

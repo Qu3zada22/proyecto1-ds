@@ -78,11 +78,12 @@ def test_caso_real_publica_conteos_por_unidad_y_porcentajes_reproducibles():
     assert (result["valores_faltantes"]["antes"], result["valores_faltantes"]["despues"]) == ("15796 (6.66%)", "3929 (1.58%)")
     assert (result["variables_con_na"]["antes"], result["variables_con_na"]["despues"]) == ("7", "6")
     assert result["duplicados_exactos"]["despues"] == "0"
-    assert result["posibles_duplicados"]["despues"] == "1355 (0 fusionados; 718 probable; 271 revisar; 0 duplicado confirmado; 0 independiente confirmado)"
-    assert result["formatos_inconsistentes"]["despues"] == "1 variables; 0 categorías (251 registros TELEFONO; 0 campos exteriores)"
+    assert result["posibles_duplicados"]["despues"] == "1355 (0 fusionados; 718 probable; 260 revisar; 0 duplicado confirmado; 11 independiente confirmado)"
+    assert result["formatos_inconsistentes"]["despues"] == "1 variables; 0 categorías (245 registros TELEFONO; 0 campos exteriores)"
     assert result["tipos_incorrectos"]["despues"] == "0"
     assert result["categorias_inconsistentes"]["despues"] == "0"
     assert "3929 ausencias" in result["errores_corregidos"]["despues"]
+    assert "6 teléfonos aprobados" in result["errores_corregidos"]["despues"]
     assert "145 filas territoriales" in result["categorias_inconsistentes"]["interpretacion"]
 
 

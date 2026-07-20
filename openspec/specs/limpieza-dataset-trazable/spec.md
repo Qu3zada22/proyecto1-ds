@@ -35,7 +35,7 @@ El sistema MUST generar `data/processed/establecimientos_diversificado_limpio.cs
 
 El sistema MUST aplicar solo reglas determinísticas seguras: eliminar la columna `<NBSP>` si está completamente vacía, normalizar NBSP/espacios, convertir marcadores inequívocos de ausencia a vacío/nulo consistente y preservar identificadores, teléfonos, categorías y texto libre como cadenas.
 
-La preservación MUST distinguir diagnóstico de validación: 201 es el conteo histórico agregado del diagnóstico inicial para teléfonos con caracteres no numéricos; 251 es el pendiente operativo vigente bajo la regla vacío o exactamente 8 dígitos, incluidos 50 valores numéricos con longitud distinta. La evidencia histórica agregada MUST NOT usarse para afirmar correspondencia registro por registro.
+La preservación MUST distinguir diagnóstico de validación: 201 es el conteo histórico agregado inicial; tras 6 normalizaciones exactas aprobadas, 245 es el pendiente operativo vigente, incluidos 50 valores numéricos con longitud distinta. La evidencia histórica agregada MUST NOT usarse para afirmar correspondencia registro por registro.
 
 #### Escenario: reglas seguras aplicadas
 

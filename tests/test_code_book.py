@@ -130,7 +130,9 @@ def test_rechaza_metadata_inconsistente_entre_fuentes(tmp_path):
 def test_maestro_mantiene_pendientes_rutas_portables_y_pdf_fuera_de_alcance():
     markdown = build_code_book(ANGGIE, TERRITORIAL, CLEAN)
 
-    assert all(value in markdown for value in ("718 pares", "271 pares", "251 teléfonos sospechosos vigentes", "145 filas"))
+    assert all(value in markdown for value in ("978 pares", "718 `duplicado_probable`", "260 `revisar`", "245 teléfonos sospechosos vigentes", "145 filas"))
+    assert "11 pares `independiente_confirmado`" in markdown
+    assert "6 normalizaciones telefónicas exactas" in markdown
     assert "201 hallazgos históricos agregados" in markdown
     assert "50 teléfonos numéricos vigentes con longitud distinta de 8" in markdown
     assert "no establece correspondencia registro por registro" in markdown
@@ -152,9 +154,13 @@ def test_maestro_deriva_pendientes_de_evidencia_vigente(tmp_path):
         writer.writerows(rows)
 
     current = build_code_book(anggie, territorial, clean)
+    probable = sum(row["decision"] == "duplicado_probable" for row in rows)
+    pending = sum(row["decision"] in {"revisar", "revisar_institucional"} for row in rows)
+    confirmed = sum(row["decision"] == "independiente_confirmado" for row in rows)
 
     assert current != previous
-    assert "717 pares `duplicado_probable`" in current and "272 pares `revisar`" in current
+    assert f"{probable} `duplicado_probable` + {pending} `revisar`" in current
+    assert f"{confirmed} independientes confirmados" in current
 
 
 def test_maestro_deriva_telefonos_vigentes_del_limpio(tmp_path):
@@ -166,9 +172,18 @@ def test_maestro_deriva_telefonos_vigentes_del_limpio(tmp_path):
     _write_clean(clean, rows[0], rows[1:])
 
     markdown = build_code_book(anggie, territorial, clean)
+    records = [dict(zip(rows[0], row, strict=True)) for row in rows[1:]]
+    suspicious = sum(
+        bool(row["TELEFONO"]) and (not row["TELEFONO"].isdigit() or len(row["TELEFONO"]) != 8)
+        for row in records
+    )
+    numeric_wrong = sum(
+        bool(row["TELEFONO"]) and row["TELEFONO"].isdigit() and len(row["TELEFONO"]) != 8
+        for row in records
+    )
 
-    assert "252 teléfonos sospechosos vigentes" in markdown
-    assert "51 teléfonos numéricos vigentes con longitud distinta de 8" in markdown
+    assert f"{suspicious} teléfonos sospechosos vigentes" in markdown
+    assert f"{numeric_wrong} teléfonos numéricos vigentes con longitud distinta de 8" in markdown
     assert "201 hallazgos históricos agregados" in markdown
 
 

@@ -29,6 +29,14 @@ def _write_candidates(path: Path, rows: list[dict]) -> None:
         writer = csv.DictWriter(f, fieldnames=CANDIDATE_FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
+    if "outputs" in path.parts:
+        root = path.parents[path.parts[::-1].index("outputs")]
+        decisions = root / "data/decisions/duplicados_aprobados.csv"
+        decisions.parent.mkdir(parents=True, exist_ok=True)
+        decisions.write_text(
+            "codigo_a,codigo_b,decision,razon,evidencia,aprobador,fecha\n",
+            encoding="utf-8",
+        )
 
 
 def _read_candidates(path: Path) -> list[dict[str, str]]:

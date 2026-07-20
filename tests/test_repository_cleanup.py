@@ -113,14 +113,14 @@ def test_estado_final_elimina_allowlist_rastreada_y_preserva_protegidos():
         "data/raw/manifest.json": "8b72e90ff85e0d646f15dcff88cf32f0cbb11bc8d605582cd7d2e46efa5f7e07",
         "data/source/establecimientos_diversificado_mineduc.csv": "c83ac119326279b67acbbca5c9d1cada6877bb56526c76c1461fdc9b3bded82f",
         "data/reference/catalogo_territorial.csv": "64b86ba51f813d0ce6806a3a948af34e5d5a5ad8425ed62f0e0e1d72a53387f2",
-        "data/processed/establecimientos_diversificado_limpio.csv": "32414cc3bf68744923ef8d51758e0c863713d6fd3a39b449f37ac04923fb6a8c",
-        "outputs/tablas/bitacora_limpieza.csv": "3c5911720a5e8931ecefd86791eb605ba0fab2e45f396e7ef872070fcb603aad",
+        "data/processed/establecimientos_diversificado_limpio.csv": "86e411c5f6f11f2af67b2d1dddf199f17ddc5a7fd9b429347bb38dde9e17d521",
+        "outputs/tablas/bitacora_limpieza.csv": "61a013ebbdb9b76d68ce670166fa252a7b40226e953e96f32655f6fa9d2b5a66",
         "outputs/tablas/diagnostico_columnas.csv": "e41123edcb09b3ae78cbf6f8555d317d0f55f222ce2132db70a5de1d1f06d69f",
         "outputs/tablas/dominios_observados.csv": "c95d4905a15854653a64b720bcc956c2151d2dda3569ee33de0de60fa1896f19",
         "outputs/tablas/duplicados_exactos.csv": "81cc2a2a3e2c9afa93030cd73e31966889297b9cd65730683ef40915e0f89bd3",
         "outputs/tablas/problemas_potenciales.csv": "9ccfa68b289547254ac47edb4fb646bbb1fa9f1e4c4b971959d30dd08df40170",
-        "outputs/tablas/reporte_limpieza_base.csv": "d915a0c77a3dd4d4f85e9cdb1555c2de732080aaefb102f37d57b6d0fc99c09c",
-        "outputs/tablas/reporte_calidad_antes_despues.csv": "ffba17a2b891d74972201891c3a978f1aa822873185f882863ee231a65bd8fd8",
+        "outputs/tablas/reporte_limpieza_base.csv": "9e97b1f6d7007e90b8a40ffa14466f01ad1a9b4df199fb6c6606c400210b4475",
+        "outputs/tablas/reporte_calidad_antes_despues.csv": "02665aca30d9a08b176dbd22841d41d25915cf29c5f5e79f31467f3558b3a92b",
         "outputs/tablas/resumen_dataset.csv": "2033301b36a70926a0a7dd45313e6298cbdfb5e59227964199131dbf1ad7bb2a",
         "outputs/tablas/inconsistencias_territoriales.csv": "961565cc3bbf6ea18cd9b012525ce47acada935e88ed37fb4ceb5e50854b48fd",
         "outputs/reportes/validacion_territorial.md": "3620b867483bb442d0d2ea28d083325a1ecc4c2985a0c722658fb1363a5b0724",
@@ -192,7 +192,7 @@ def test_plan_asigna_git_y_code_book_a_cada_integrante():
 def test_plan_mantiene_entregables_futuros_y_rutas_canonicas():
     plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
     for pending in (
-        "catálogo territorial", "duplicados parciales", "excepciones telefónicas",
+        "catálogo territorial", "duplicados parciales", "245 teléfonos",
         "auditoría interna", "aceptación institucional",
     ):
         assert pending in plan
@@ -237,8 +237,8 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     code_book = (ROOT / "docs/code_book/variables_anggie.md").read_text(encoding="utf-8")
 
     for document in (plan, readme, agents):
-        assert "718" in document and "366" in document and "271" in document
-        assert "triage" in document.lower()
+        assert all(value in document for value in ("718", "260", "11", "245"))
+        assert "duplicad" in document.lower()
         assert "confirm" in document.lower() and "revis" in document.lower()
     assert "SUPERVISOR" in code_book and "668" in code_book
     assert "DIRECTOR" in code_book and "2,912" in code_book
@@ -246,8 +246,8 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
 
     requirement_rows = _planning_rows("R")
     assert requirement_rows["R5g"][3] == "Parcial"
-    assert "triage" in requirement_rows["R5g"][4].lower()
-    assert "718" in requirement_rows["R5g"][5] and "271" in requirement_rows["R5g"][5]
+    assert "independiente_confirmado" in requirement_rows["R5g"][4]
+    assert "978" in requirement_rows["R5g"][5]
     counts = {state: 0 for state in ("Completado", "Parcial", "Faltante", "Incierto")}
     for cells in requirement_rows.values():
         counts[cells[3]] += 1
@@ -265,7 +265,7 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     }
     assert {name: requirement_rows[name][3] for name in expected_states} == expected_states
     assert "docs/code_book.pdf" in requirement_rows["R10"][4]
-    assert "718" in requirement_rows["R5g"][5] and "271" in requirement_rows["R5g"][5]
+    assert "978" in requirement_rows["R5g"][5]
     assert "scripts/generar_code_book.py" in readme
     assert "scripts/generar_code_book_pdf.py" in readme
     assert "c871bd7" in plan and "c871bd7" in readme
@@ -279,9 +279,9 @@ def test_auditoria_interna_distingue_materiales_de_bloqueos():
     assert "RECIBO INTERNO" in audit and "no es un sexto material" in audit
     assert "NO APTO PARA CIERRE INSTITUCIONAL" in audit
     assert all(item in audit for item in ("Código fuente", "Repositorio", "Área de trabajo", "Documento PDF", "Data limpia"))
-    assert all(item in audit for item in ("718", "271", "251", "201", "145"))
+    assert all(item in audit for item in ("718", "260", "245", "201", "145", "11"))
     assert "201 hallazgos históricos agregados" in audit
-    assert "251 teléfonos sospechosos vigentes" in audit
+    assert "245 teléfonos" in audit
     assert all(item in audit for item in ("Anggie", "Iris", "Jonathan"))
     assert all(item in audit for item in ("R5e", "R5f", "R5g", "R7", "R9", "RE", "RT"))
     assert "c871bd7" in audit and "RT satisfecho" in audit
@@ -297,7 +297,7 @@ def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
     )
     documents = [(ROOT / path).read_text(encoding="utf-8") for path in paths]
 
-    assert all("251" in document for document in documents)
+    assert all("245" in document for document in documents)
     assert all("201" in document and ("históric" in document.lower() or "diagnóstico inicial" in document.lower()) for document in documents)
     assert "23 `Completado`, 6 `Parcial`" in documents[2]
     assert "NO APTO PARA CIERRE INSTITUCIONAL" in documents[3]

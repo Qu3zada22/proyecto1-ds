@@ -11,6 +11,7 @@ from typing import Any
 from proyecto1_ds.cleaning import CleaningCsvError, MISSING_MARKERS, clean_dataset
 from proyecto1_ds.enrichment import EnrichmentError, enrich_result
 from proyecto1_ds.validation import ValidationError, validate_dataset
+from proyecto1_ds.decisions import DEFAULT_PHONE_DECISIONS_CSV, DecisionManifestError
 
 
 REPORT_FIELDS = ["metrica", "antes", "despues", "unidad", "interpretacion", "evidencia"]
@@ -64,10 +65,13 @@ def build_quality_report(
     for row in log:
         _integer(row["filas_afectadas"])
     try:
-        expected_cleaning = clean_dataset(source_csv)
+        decisions = Path(source_csv).parents[2] / DEFAULT_PHONE_DECISIONS_CSV
+        expected_cleaning = clean_dataset(
+            source_csv, phone_decisions_csv=decisions if decisions.exists() else None
+        )
         if catalog.exists():
             expected_cleaning = enrich_result(expected_cleaning, catalog_csv=catalog)
-    except (CleaningCsvError, EnrichmentError) as exc:
+    except (CleaningCsvError, DecisionManifestError, EnrichmentError) as exc:
         raise QualityReportError(f"No se pudo recomputar la bitácora: {exc}") from exc
     log_key = lambda row: (row["variable"], row["regla"], row["filas_afectadas"])
     actual_cleaning_log = [log_key(row) for row in log if row["regla"] != "decidir_duplicados"]
@@ -121,6 +125,7 @@ def build_quality_report(
         "mayúsculas": _log_sum(log, "normalizar_mayusculas"),
         "territorios": _log_sum(log, "corregir_municipio_catalogo"),
         "códigos derivados": _log_sum(log, "agregar_codigos_catalogo"),
+        "teléfonos aprobados": _log_sum(log, "normalizar_telefono_aprobado"),
     }
     corrected_summary = "; ".join(f"{count} {label}" for label, count in corrections.items())
 

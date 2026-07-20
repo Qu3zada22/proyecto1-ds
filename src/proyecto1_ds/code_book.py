@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from proyecto1_ds.cleaning import MISSING_MARKERS
+from proyecto1_ds.decisions import DEFAULT_PHONE_DECISIONS_CSV, PHONE_DECISION_FIELDS
 
 
 VARIABLE_HEADING = re.compile(r"^## `([^`]+)`$", re.MULTILINE)
@@ -42,10 +43,14 @@ def build_code_book(
     territory = _read_evidence(Path(territory_csv) if territory_csv else tables / "inconsistencias_territoriales.csv", {"filas", "decision"})
     probable = sum(row["decision"] == "duplicado_probable" for row in duplicates)
     pending = sum(row["decision"] in {"revisar", "revisar_institucional"} for row in duplicates)
+    confirmed_independent = sum(row["decision"] == "independiente_confirmado" for row in duplicates)
     historical_phones = sum(_integer(row["conteo"]) for row in problems if row["columna"] == "TELEFONO" and row["tipo"] == "formato_sospechoso")
     current_phones = sum(bool(row["TELEFONO"]) and (not row["TELEFONO"].isdigit() or len(row["TELEFONO"]) != 8) for row in rows)
     numeric_wrong_length = sum(bool(row["TELEFONO"]) and row["TELEFONO"].isdigit() and len(row["TELEFONO"]) != 8 for row in rows)
     territorial = sum(_integer(row["filas"]) for row in territory if row["decision"] == "revisar")
+    phone_manifest = clean_path.parents[2] / DEFAULT_PHONE_DECISIONS_CSV
+    approved_phones = len(_read_evidence(phone_manifest, set(PHONE_DECISION_FIELDS))) if phone_manifest.exists() else 0
+    pending_duplicates = probable + pending
     if len(header) != 21:
         raise CodeBookError(f"El dataset limpio debe tener exactamente 21 variables; tiene {len(header)}")
     sources = [
@@ -95,7 +100,8 @@ def build_code_book(
         f"- **Fecha exacta de extracción:** {extraction_date}.",
         f"- **Versión del conjunto limpio:** {version}.",
         "- **Contribuciones:** Anggie documenta 17 variables; Iris documenta 4 variables territoriales; Jonathan ensambla el maestro.",
-        f"- **Pendientes:** {probable} pares `duplicado_probable` requieren confirmación, {pending} pares requieren revisión, {current_phones} teléfonos sospechosos vigentes y {territorial} filas territoriales permanecen pendientes.",
+        f"- **Pendientes:** {pending_duplicates} pares ({probable} `duplicado_probable` + {pending} `revisar`), {current_phones} teléfonos sospechosos vigentes y {territorial} filas territoriales permanecen pendientes.",
+        f"- **Decisiones aprobadas:** {confirmed_independent} pares `independiente_confirmado` y {approved_phones} normalizaciones telefónicas exactas; no hubo fusiones ni borrados.",
         f"- **Referencia histórica telefónica:** el diagnóstico inicial conserva {historical_phones} hallazgos históricos agregados por caracteres no numéricos; además, el control vigente detecta {numeric_wrong_length} teléfonos numéricos vigentes con longitud distinta de 8. La evidencia histórica agregada no establece correspondencia registro por registro.",
         "- **PDF reproducible:** `uv run python scripts/generar_code_book_pdf.py` genera `docs/code_book.pdf`.",
         "",
@@ -125,7 +131,7 @@ def build_code_book(
         ])
     lines.extend([
         "## Evidencia transversal y trabajo pendiente", "",
-        f"- Duplicados: `outputs/tablas/duplicados_parciales.csv` conserva {probable} pares `duplicado_probable` por confirmar y {pending} pares `revisar`.",
+        f"- Duplicados: `outputs/tablas/duplicados_parciales.csv` conserva {pending_duplicates} pendientes ({probable} `duplicado_probable` + {pending} `revisar`) y {confirmed_independent} independientes confirmados.",
         f"- Teléfonos vigentes: el control estricto sobre el limpio conserva {current_phones} sospechosos; todo valor no vacío debe tener exactamente 8 dígitos.",
         f"- Referencia histórica: `outputs/tablas/problemas_potenciales.csv` conserva {historical_phones} hallazgos agregados del diagnóstico inicial por caracteres no numéricos; el limpio también contiene {numeric_wrong_length} valores numéricos con longitud distinta de 8, sin inferir correspondencia registro por registro.",
         f"- Territorio: `outputs/tablas/inconsistencias_territoriales.csv` conserva {territorial} filas `revisar`.",

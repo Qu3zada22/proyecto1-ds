@@ -76,8 +76,8 @@ Datos de referencia vigentes:
 - Dataset limpio actual: 11,867 filas y 21 columnas (incluye `departamento_codigo` y `municipio_codigo`).
 - Catálogo territorial: `data/reference/catalogo_territorial.csv` (22 departamentos, 340 municipios), derivado de un espejo/conversión comunitaria fijado; INE, Censo 2018 es la fuente primaria declarada, no el espejo.
 - Territorio pendiente: 7 parejas/145 filas conservan `decision=revisar`; 2 variantes tipográficas abarcan 19 filas.
-- Duplicados parciales: triage reproducible de 1,355 pares (718 `duplicado_probable`, 366 `independiente`, 271 `revisar`); los 718 probables requieren confirmación y los 271 ambiguos revisión antes de fusionar.
-- Teléfonos: 251 sospechosos vigentes bajo la regla final (vacío o exactamente 8 dígitos) requieren revisión; 201 es únicamente el conteo histórico agregado del diagnóstico inicial por caracteres no numéricos y no demuestra correspondencia registro por registro.
+- Duplicados parciales: 1,355 pares; 11 `independiente_confirmado`, 718 `duplicado_probable`, 366 `independiente` automáticos y 260 `revisar`. Quedan 978 pendientes y 0 fusionados.
+- Teléfonos: 6 normalizaciones exactas aprobadas y aplicadas; 245 sospechosos vigentes requieren revisión. Los 201 históricos agregados no demuestran correspondencia registro por registro.
 - Validación final: 7 controles reproducibles; 3 `cumple`, 4 `requiere_revision` y 0 `falla`.
 - Reporte integral: exactamente 10 métricas de rúbrica con pendientes integrados.
 - Code Book maestro: `docs/code_book.md` ensambla 21 variables y `docs/code_book.pdf` es su salida reproducible validada.
@@ -131,7 +131,7 @@ Datos de referencia vigentes:
 
 | Responsable | Próximos entregables |
 |---|---|
-| Anggie | Automatización y triage completados; confirmación de 718 probables, revisión de 271 ambiguos y aceptación telefónica pendientes. |
+| Anggie | 11 independientes y 6 teléfonos aprobados; confirmación de 718 probables, 260 ambiguos y 245 teléfonos pendientes. |
 | Iris | Hecho: catálogo reproducible, consistencia territorial, normalización, códigos derivados y Code Book territorial de 4 variables. |
 | Jonathan | Validación, reporte, Code Book Markdown/PDF y auditoría interna publicados en `c871bd7`. |
 

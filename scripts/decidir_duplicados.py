@@ -16,6 +16,7 @@ from proyecto1_ds.duplicates import (  # noqa: E402
     DuplicatesCsvError,
     apply_duplicate_decisions,
 )
+from proyecto1_ds.decisions import DEFAULT_DUPLICATE_DECISIONS_CSV, DecisionManifestError  # noqa: E402
 
 class DecisionCliError(RuntimeError):
     """Error esperado del CLI de decisión de duplicados."""
@@ -30,6 +31,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=ROOT / DEFAULT_CANDIDATES_CSV,
     )
+    parser.add_argument(
+        "--decisions-csv",
+        type=Path,
+        default=ROOT / DEFAULT_DUPLICATE_DECISIONS_CSV,
+    )
     return parser
 
 
@@ -40,8 +46,11 @@ def main(argv: list[str] | None = None) -> int:
             args.candidates_csv, ROOT / "outputs/tablas", "--candidates-csv"
         )
         bitacora_path = ROOT / "outputs/tablas/bitacora_limpieza.csv"
-        summary = apply_duplicate_decisions(candidates_csv, bitacora_csv=bitacora_path)
-    except (DecisionCliError, DuplicatesCsvError, OSError, csv.Error) as exc:
+        decisions_csv = _resolve_under(args.decisions_csv, ROOT / "data/decisions", "--decisions-csv")
+        summary = apply_duplicate_decisions(
+            candidates_csv, bitacora_csv=bitacora_path, decisions_csv=decisions_csv
+        )
+    except (DecisionCliError, DecisionManifestError, DuplicatesCsvError, OSError, csv.Error) as exc:
         print(f"Error de decisión: {exc}", file=sys.stderr)
         return 1
 
@@ -49,6 +58,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  duplicado_probable : {summary.duplicado_probable}")
     print(f"  independiente      : {summary.independiente}")
     print(f"  revisar            : {summary.revisar}")
+    print(f"  manuales           : {summary.manuales}")
     print(f"Bitácora actualizada: {bitacora_path}")
     return 0
 

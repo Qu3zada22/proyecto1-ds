@@ -9,8 +9,10 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 - Procedencia inmutable: 23 HTML en `data/raw/` y `data/raw/manifest.json`.
 - Territorio: catálogo reproducible desde un **espejo/conversión comunitaria** fijado; la fuente primaria declarada es INE, Censo 2018. El espejo no es una publicación primaria oficial.
 - Resultado territorial: 11,867×21; 2 variantes tipográficas (19 filas) corregidas y 7 parejas (145 filas) conservadas con `decision=revisar` y códigos provisionales.
-- Trabajo restante: automatización completada para triage (718/366/271), validación, reporte y Code Book; pendientes institucionales: confirmar 718 `duplicado_probable`, revisar 271 pares ambiguos, 251 teléfonos sospechosos vigentes y 145 filas territoriales. Los 201 casos telefónicos del diagnóstico inicial son hallazgos históricos agregados por caracteres no numéricos, no el pendiente operativo, y no permiten correspondencia registro por registro.
+- Trabajo restante: automatización completada; pendientes institucionales: 718 `duplicado_probable`, 260 pares ambiguos, 245 teléfonos sospechosos vigentes y 145 filas territoriales. Los 201 casos telefónicos del diagnóstico inicial son hallazgos históricos agregados y no permiten correspondencia registro por registro.
+- Decisiones aprobadas: `data/decisions/duplicados_aprobados.csv` confirma 11 pares independientes sin fusionarlos y `data/decisions/telefonos_aprobados.csv` autoriza 6 normalizaciones exactas ya aplicadas. Las recomendaciones post-decisión conservan 978 pares y 245 teléfonos pendientes.
 - Resumen verificable de la matriz: **23 `Completado`, 6 `Parcial`, 0 `Faltante`, 0 `Incierto`**.
+- Resultado institucional: **NO APTO PARA CIERRE INSTITUCIONAL**; las recomendaciones no equivalen a aprobación.
 - Estados: **Completado** (aceptación demostrada), **Parcial** (hay evidencia, queda brecha), **Faltante** (sin entregable aceptable) e **Incierto** (requiere una decisión o fuente).
 - Todo elemento marcado **Planificado/no implementado** permanece fuera del estado actual.
 
@@ -35,9 +37,9 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 | R5b | Paso 4.5b | Tipos correctos | Completado | `validacion_final.csv`: esquema semántico esperado de 21 variables | Ninguna; identificadores, códigos y teléfonos se preservan como texto | Jonathan | R5a–R5h | Control `tipos_esperados` cumple | U4 Limpieza |
 | R5c | Paso 4.5c | Normalización de texto | Completado | Mayúsculas, NBSP, invisibles (NFC) y marcadores normalizados; bitácora | Ninguna para reglas deterministas | Iris | Bitácora | Cero bordes; decisiones trazadas | U4 Limpieza |
 | R5d | Paso 4.5d | Categorías consistentes | Completado | Vocabulario controlado verificado; territorio validado contra catálogo INE | Ninguna | Iris | R3f | Variantes justificadas y probadas | U4 Limpieza |
-| R5e | Paso 4.5e | Formatos uniformes | Parcial | Control vigente: 251 teléfonos sospechosos; referencia histórica: 201 hallazgos agregados del diagnóstico inicial; además hay 50 valores numéricos vigentes con longitud distinta de 8 | Falta aceptación institucional de los 251 teléfonos; la evidencia histórica agregada no identifica correspondencia fila a fila | Anggie | Revisión humana | Formatos aceptados o excepciones aprobadas | U4 Limpieza |
-| R5f | Paso 4.5f | Valores inválidos | Parcial | 2 variantes tipográficas/19 filas corregidas; 7 parejas/145 filas siguen `revisar`; 251 teléfonos siguen en revisión | Aceptación telefónica vigente y territorial pendiente | Iris | R5e | Territorio trazado; teléfonos quedan pendientes | U4 Limpieza |
-| R5g | Paso 4.5g | Duplicados exactos y parciales | Parcial | Exactos=0; triage reproducible: 718 duplicado_probable, 366 independiente, 271 revisar | Confirmar 718 probables y revisar 271 ambiguos antes de fusionar; 0 fusionados | Anggie | Detección hecha | Cada candidato confirmado institucionalmente; sin fusión automática | U4 Limpieza |
+| R5e | Paso 4.5e | Formatos uniformes | Parcial | 6 normalizaciones exactas aprobadas y aplicadas; 245 pendientes: 196 conservar/documentar y 49 requieren fuente | Falta aceptación institucional de los 245 teléfonos restantes | Anggie | Revisión humana | Formatos aceptados o excepciones aprobadas | U4 Limpieza |
+| R5f | Paso 4.5f | Valores inválidos | Parcial | 390 hallazgos vigentes: 245 teléfonos + 145 filas territoriales; 7 aliases sin renombrar | Aceptación telefónica y territorial pendiente | Iris | R5e | Territorio trazado; teléfonos quedan pendientes | U4 Limpieza |
+| R5g | Paso 4.5g | Duplicados exactos y parciales | Parcial | Exactos=0; 11 `independiente_confirmado`; 978 pendientes: 718 probables + 260 ambiguos | Obtener fuente institucional para los 978 pendientes; 0 fusionados | Anggie | Detección hecha | Cada candidato confirmado institucionalmente; sin fusión automática | U4 Limpieza |
 | R5h | Paso 4.5h | Consistencia cruzada | Completado | `validacion_territorial.md`; 329 válidas, 22 por regla y 7 parejas/145 filas `revisar` | Ninguna para el alcance de detección de Iris | Iris | Catálogo reproducible | Pendientes preservados, sin autocorrección inventada | U4 Limpieza |
 | R5i | Paso 4.5i | Variables derivadas justificadas | Completado | 4 variables territoriales documentadas; `departamento_codigo` y `municipio_codigo` marcadas como derivadas | Ninguna para la sección de Iris | Iris | Code Book territorial | Método, dominio, provisionalidad y utilidad documentados | U4 Limpieza |
 | R6 | Control 6 | Bitácora de transformaciones | Completado | `bitacora_limpieza.csv` + `reporte_limpieza_base.csv`; triage sin fusión | Ninguna para transformaciones ejecutadas; decisiones futuras se agregarán al aprobarse | Anggie | R5 | Una fila por transformación aplicada | U4 Limpieza |
@@ -52,7 +54,7 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 
 | ID | Persona | Entregable | Aceptación | Aporte Code Book | Evidencia Git | Dependencias |
 |---|---|---|---|---|---|---|
-| A-Anggie | Anggie | Implementación de reglas y triage (718/366/271), excepciones telefónicas y sección Code Book; confirmación/revisión institucional pendiente | Flujo reproducible; decisiones preservadas; bitácora idempotente; sin borrado ni fusión | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits publicados `b8eb3de`, `7bac604` | CSV alterno; diagnóstico; revisión institucional/manual |
+| A-Anggie | Anggie | Reglas y triage; 11 independientes y 6 teléfonos aprobados; 978 pares y 245 teléfonos pendientes | Flujo reproducible; decisiones versionadas; sin borrado ni fusión | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits publicados `b8eb3de`, `7bac604` | CSV alterno; diagnóstico; revisión institucional/manual |
 | A-Iris | Iris | Catálogo reproducible y consistencia departamento–municipio | 7 parejas/145 filas trazadas como `revisar`; 2 variantes/19 filas justificadas | Code Book territorial completo: dominios, valores y 2 variables derivadas | Commits publicados `b314998`, `bdf8736`; sección propia publicada | Espejo fijado; INE, Censo 2018 como fuente primaria declarada |
 | A-Jonathan | Jonathan | Validación, reporte integral, Code Book Markdown/PDF y auditoría interna | Siete controles, 10 métricas y maestro de 21 variables reproducibles | Code Book maestro: ensamblaje, versión y pendientes | Commit de integración publicado `c871bd7` | Entregas de Anggie e Iris |
 
@@ -176,12 +178,13 @@ Definir la estrategia de limpieza antes de tocar los datos.
 - **Enriquecimiento territorial** en `src/proyecto1_ds/enrichment.py`: variables derivadas `departamento_codigo` y `municipio_codigo` (códigos INE) y corrección trazable de 2 typos; cableado en `scripts/limpiar_dataset.py`.
 - **Detección de duplicados parciales** en `src/proyecto1_ds/duplicates.py` (`scripts/detectar_duplicados.py`): similitud RapidFuzz con corroboración de sede y oferta; salida `outputs/tablas/duplicados_parciales.csv` y `outputs/reportes/duplicados_parciales.md`. Sin borrado automático.
 - **Validación territorial** en `src/proyecto1_ds/territorial.py` (`scripts/validar_territorio.py`): consistencia departamento–municipio contra catálogo; salida `outputs/tablas/inconsistencias_territoriales.csv` y `outputs/reportes/validacion_territorial.md`.
+- **Recomendaciones de pendientes** en `src/proyecto1_ds/pending_review.py` (`scripts/revisar_pendientes.py`): valida linaje y publica tres tablas más `outputs/reportes/revision_pendientes.md`; no modifica ni fusiona datasets.
 
 ## Ruta crítica y unidades de entrega
 
 ```text
 fuente canónica (hecho) → catálogo territorial (hecho) → normalización + códigos INE (hecho)
-→ duplicados: triage hecho; confirmar 718 probables + revisar 271 ambiguos
+→ duplicados: 11 independientes aprobados; confirmar 718 probables + revisar 260 ambiguos
 → validación + reporte + Code Book Markdown/PDF (automatizados y publicados) → aceptación institucional
 ```
 

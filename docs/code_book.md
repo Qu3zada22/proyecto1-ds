@@ -8,7 +8,8 @@ Este documento reúne las 21 variables del dataset limpio en su orden canónico.
 - **Fecha exacta de extracción:** 2026-07-14.
 - **Versión del conjunto limpio:** v0.1.0.
 - **Contribuciones:** Anggie documenta 17 variables; Iris documenta 4 variables territoriales; Jonathan ensambla el maestro.
-- **Pendientes:** 718 pares `duplicado_probable` requieren confirmación, 271 pares requieren revisión, 251 teléfonos sospechosos vigentes y 145 filas territoriales permanecen pendientes.
+- **Pendientes:** 978 pares (718 `duplicado_probable` + 260 `revisar`), 245 teléfonos sospechosos vigentes y 145 filas territoriales permanecen pendientes.
+- **Decisiones aprobadas:** 11 pares `independiente_confirmado` y 6 normalizaciones telefónicas exactas; no hubo fusiones ni borrados.
 - **Referencia histórica telefónica:** el diagnóstico inicial conserva 201 hallazgos históricos agregados por caracteres no numéricos; además, el control vigente detecta 50 teléfonos numéricos vigentes con longitud distinta de 8. La evidencia histórica agregada no establece correspondencia registro por registro.
 - **PDF reproducible:** `uv run python scripts/generar_code_book_pdf.py` genera `docs/code_book.pdf`.
 
@@ -183,7 +184,7 @@ Los conteos de nulos corresponden al dataset limpio. `revisar` indica evidencia 
   - Normalización de NBSP y espacios múltiples (8 filas).
   - Marcadores de ausencia convertidos a vacío (946 filas).
 - **Referencia histórica del diagnóstico inicial:** 201 hallazgos agregados con caracteres no-dígito. No identifica necesariamente las mismas filas del control vigente.
-- **Pendiente operativo vigente:** 251 teléfonos sospechosos bajo la regla estricta; incluye además 50 valores numéricos con longitud distinta de 8. La evidencia histórica agregada no permite establecer correspondencia registro por registro.
+- **Pendiente operativo vigente:** 245 teléfonos sospechosos bajo la regla estricta tras aplicar 6 normalizaciones exactas aprobadas; incluye 50 valores numéricos con longitud distinta de 8. La evidencia histórica agregada no permite establecer correspondencia registro por registro.
   - **Múltiples teléfonos separados por `-`**: ej. `24328801-24329098`, `77648506-45419234-41177068`. Representa varios contactos del establecimiento; se conserva como texto íntegro.
   - **Múltiples teléfonos separados por `,`**: ej. `3325732, 2320075, 2307014`. Mismo caso anterior.
   - **Texto auxiliar**: ej. `25763, 26725 Y 21568`. Texto aclaratorio conservado sin modificación.
@@ -422,8 +423,8 @@ Los conteos de nulos corresponden al dataset limpio. `revisar` indica evidencia 
 
 ## Evidencia transversal y trabajo pendiente
 
-- Duplicados: `outputs/tablas/duplicados_parciales.csv` conserva 718 pares `duplicado_probable` por confirmar y 271 pares `revisar`.
-- Teléfonos vigentes: el control estricto sobre el limpio conserva 251 sospechosos; todo valor no vacío debe tener exactamente 8 dígitos.
+- Duplicados: `outputs/tablas/duplicados_parciales.csv` conserva 978 pendientes (718 `duplicado_probable` + 260 `revisar`) y 11 independientes confirmados.
+- Teléfonos vigentes: el control estricto sobre el limpio conserva 245 sospechosos; todo valor no vacío debe tener exactamente 8 dígitos.
 - Referencia histórica: `outputs/tablas/problemas_potenciales.csv` conserva 201 hallazgos agregados del diagnóstico inicial por caracteres no numéricos; el limpio también contiene 50 valores numéricos con longitud distinta de 8, sin inferir correspondencia registro por registro.
 - Territorio: `outputs/tablas/inconsistencias_territoriales.csv` conserva 145 filas `revisar`.
 - La auditoría de entrega se conserva como recibo interno en `docs/auditoria_final.md`; no sustituye ninguno de los cinco materiales exigidos.

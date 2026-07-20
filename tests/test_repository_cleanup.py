@@ -251,9 +251,9 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     counts = {state: 0 for state in ("Completado", "Parcial", "Faltante", "Incierto")}
     for cells in requirement_rows.values():
         counts[cells[3]] += 1
-    assert counts == {"Completado": 22, "Parcial": 7, "Faltante": 0, "Incierto": 0}
-    assert "| Completados | 22 |" in readme
-    assert "| Parciales | 7 |" in readme
+    assert counts == {"Completado": 23, "Parcial": 6, "Faltante": 0, "Incierto": 0}
+    assert "| Completados | 23 |" in readme
+    assert "| Parciales | 6 |" in readme
     assert "| Faltantes | 0 |" in readme
     assert requirement_rows["R8"][3] == "Completado"
     assert "Code Book Markdown/PDF" in readme and "auditoría interna" in readme
@@ -261,13 +261,15 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     expected_states = {
         "R5a": "Completado", "R5e": "Parcial", "R5g": "Parcial",
         "R6": "Completado", "R7": "Parcial", "R9": "Parcial",
-        "R10": "Completado", "RE": "Parcial", "RT": "Parcial",
+        "R10": "Completado", "RE": "Parcial", "RT": "Completado",
     }
     assert {name: requirement_rows[name][3] for name in expected_states} == expected_states
     assert "docs/code_book.pdf" in requirement_rows["R10"][4]
     assert "718" in requirement_rows["R5g"][5] and "271" in requirement_rows["R5g"][5]
     assert "scripts/generar_code_book.py" in readme
     assert "scripts/generar_code_book_pdf.py" in readme
+    assert "c871bd7" in plan and "c871bd7" in readme
+    assert "pendiente de publicación" not in readme.lower()
     assert (ROOT / "docs/code_book.pdf").read_bytes().startswith(b"%PDF-")
 
 
@@ -282,6 +284,8 @@ def test_auditoria_interna_distingue_materiales_de_bloqueos():
     assert "251 teléfonos sospechosos vigentes" in audit
     assert all(item in audit for item in ("Anggie", "Iris", "Jonathan"))
     assert all(item in audit for item in ("R5e", "R5f", "R5g", "R7", "R9", "RE", "RT"))
+    assert "c871bd7" in audit and "RT satisfecho" in audit
+    assert "integración sin publicar" not in audit.lower()
 
 
 def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
@@ -295,5 +299,5 @@ def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
 
     assert all("251" in document for document in documents)
     assert all("201" in document and ("históric" in document.lower() or "diagnóstico inicial" in document.lower()) for document in documents)
-    assert "22 `Completado`, 7 `Parcial`" in documents[2]
+    assert "23 `Completado`, 6 `Parcial`" in documents[2]
     assert "NO APTO PARA CIERRE INSTITUCIONAL" in documents[3]

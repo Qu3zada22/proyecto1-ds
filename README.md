@@ -172,13 +172,13 @@ La evaluación detallada se encuentra en [`docs/planificacion.md`](docs/planific
 
 | Estado | Requisitos |
 |---|---:|
-| Completados | 22 |
-| Parciales | 7 |
+| Completados | 23 |
+| Parciales | 6 |
 | Faltantes | 0 |
 | Inciertos | 0 |
 | **Total auditado** | **29** |
 
-No quedan requisitos `Faltante`, pero siete permanecen `Parcial`. La automatización no equivale a aceptación: R5e, R5f, R5g, R7, R9, RE y RT conservan decisiones institucionales o publicación Git pendiente.
+No quedan requisitos `Faltante`, pero seis permanecen `Parcial`. La automatización no equivale a aceptación: R5e, R5f, R5g, R7, R9 y RE conservan decisiones institucionales pendientes. RT está completado por el historial publicado y las secciones del Code Book.
 
 ## Organización del equipo
 
@@ -186,9 +186,9 @@ No quedan requisitos `Faltante`, pero siete permanecen `Parcial`. La automatizac
 |---|---|
 | **Anggie** | Reglas y triage implementados (718/366/271), excepciones telefónicas y sección Code Book; falta confirmar 718 probables y revisar 271 ambiguos. |
 | **Iris** | Hecho: catálogo reproducible, consistencia departamento–municipio, normalización, códigos derivados y Code Book territorial de 4 variables. |
-| **Jonathan** | Validación, reporte, Code Book Markdown/PDF y auditoría interna automatizados; integración actual pendiente de publicación Git. |
+| **Jonathan** | Validación, reporte, Code Book Markdown/PDF y auditoría interna publicados en la integración `c871bd7`. |
 
-Cada integrante debe aportar commits identificables y una sección concreta del Code Book.
+Cada integrante cuenta con commits identificables publicados y una sección concreta del Code Book.
 
 ## Trabajo pendiente
 
@@ -196,7 +196,6 @@ Cada integrante debe aportar commits identificables y una sección concreta del 
 - confirmar institucionalmente los 718 pares `duplicado_probable` antes de cualquier fusión;
 - evaluar institucionalmente los 251 teléfonos sospechosos vigentes, sin normalización destructiva; los 201 hallazgos del diagnóstico inicial son una referencia histórica agregada;
 - aceptar formalmente las 145 filas territoriales provisionales o resolverlas con evidencia oficial;
-- publicar commits identificables de la integración actual.
 
 Ya está hecho en el alcance de Iris: catálogo territorial reproducible, normalización, validación departamento–municipio, códigos derivados y documentación de 4 variables. El espejo no es una publicación primaria oficial; INE, Censo 2018 es la fuente primaria declarada.
 

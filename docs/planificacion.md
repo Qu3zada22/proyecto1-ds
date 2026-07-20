@@ -10,7 +10,7 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 - Territorio: catálogo reproducible desde un **espejo/conversión comunitaria** fijado; la fuente primaria declarada es INE, Censo 2018. El espejo no es una publicación primaria oficial.
 - Resultado territorial: 11,867×21; 2 variantes tipográficas (19 filas) corregidas y 7 parejas (145 filas) conservadas con `decision=revisar` y códigos provisionales.
 - Trabajo restante: automatización completada para triage (718/366/271), validación, reporte y Code Book; pendientes institucionales: confirmar 718 `duplicado_probable`, revisar 271 pares ambiguos, 251 teléfonos sospechosos vigentes y 145 filas territoriales. Los 201 casos telefónicos del diagnóstico inicial son hallazgos históricos agregados por caracteres no numéricos, no el pendiente operativo, y no permiten correspondencia registro por registro.
-- Resumen verificable de la matriz: **22 `Completado`, 7 `Parcial`, 0 `Faltante`, 0 `Incierto`**.
+- Resumen verificable de la matriz: **23 `Completado`, 6 `Parcial`, 0 `Faltante`, 0 `Incierto`**.
 - Estados: **Completado** (aceptación demostrada), **Parcial** (hay evidencia, queda brecha), **Faltante** (sin entregable aceptable) e **Incierto** (requiere una decisión o fuente).
 - Todo elemento marcado **Planificado/no implementado** permanece fuera del estado actual.
 
@@ -46,15 +46,15 @@ Este es el plan autoritativo vigente frente a `docs/instrucciones.md`. Distingue
 | R9 | Cierre 9 | Único conjunto limpio final | Parcial | CSV único 11,867×21, sin adición/eliminación de filas | R5e, R5f, R5g y R7 conservan aceptación institucional pendiente | Jonathan | R5–R8 | Archivo único con controles aceptados; automatización sola no basta | U7 Dataset |
 | R10 | Cierre 10 | Code Book completo | Completado | `docs/code_book.md` con 21 variables + `docs/code_book.pdf` reproducible y validado | Ninguna para documentación; no cierra pendientes del dataset | Jonathan | R5–R9 | Markdown y PDF reproducibles, completos y legibles | U8 Code Book |
 | RE | Material final | Código, repositorio, área, PDF y CSV | Parcial | Cinco materiales disponibles; auditoría interna documenta hashes y comandos | CSV final sin aceptación institucional mientras R9 siga parcial | Jonathan | R7–R10 | Cinco materiales reproducibles y dataset institucionalmente aceptado | U9 Entrega |
-| RT | Trabajo en equipo | Contribución significativa visible | Parcial | Historial real identifica aportes de Anggie, Iris y Jonathan | Publicar commits de la integración actual | Equipo | Unidades anteriores | Cada persona con commit publicado y sección Code Book | Historial Git |
+| RT | Trabajo en equipo | Contribución significativa visible | Completado | Historial publicado: Anggie `b8eb3de`/`7bac604`, Iris `b314998`/`bdf8736` y Jonathan `c871bd7`; cada integrante aporta una sección del Code Book | Ninguna | Equipo | Unidades anteriores | Cada persona con commit publicado y sección Code Book | Historial Git |
 
 ## Asignaciones y contribución visible
 
 | ID | Persona | Entregable | Aceptación | Aporte Code Book | Evidencia Git | Dependencias |
 |---|---|---|---|---|---|---|
-| A-Anggie | Anggie | Implementación de reglas y triage (718/366/271), excepciones telefónicas y sección Code Book; confirmación/revisión institucional pendiente | Flujo reproducible; decisiones preservadas; bitácora idempotente; sin borrado ni fusión | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits reales `b8eb3de`, `7bac604`; integración actual pendiente de publicación | CSV alterno; diagnóstico; revisión institucional/manual |
-| A-Iris | Iris | Catálogo reproducible y consistencia departamento–municipio | 7 parejas/145 filas trazadas como `revisar`; 2 variantes/19 filas justificadas | Code Book territorial completo: dominios, valores y 2 variables derivadas | Commits reales `b314998`, `bdf8736`; sección propia publicada | Espejo fijado; INE, Censo 2018 como fuente primaria declarada |
-| A-Jonathan | Jonathan | Validación, reporte integral, Code Book Markdown/PDF y auditoría interna | Siete controles, 10 métricas y maestro de 21 variables reproducibles | Code Book maestro: ensamblaje, versión y pendientes | Commits previos reales; integración actual pendiente de publicación | Entregas de Anggie e Iris |
+| A-Anggie | Anggie | Implementación de reglas y triage (718/366/271), excepciones telefónicas y sección Code Book; confirmación/revisión institucional pendiente | Flujo reproducible; decisiones preservadas; bitácora idempotente; sin borrado ni fusión | Code Book: procedencia, métricas y tratamientos — `docs/code_book/variables_anggie.md` | Commits publicados `b8eb3de`, `7bac604` | CSV alterno; diagnóstico; revisión institucional/manual |
+| A-Iris | Iris | Catálogo reproducible y consistencia departamento–municipio | 7 parejas/145 filas trazadas como `revisar`; 2 variantes/19 filas justificadas | Code Book territorial completo: dominios, valores y 2 variables derivadas | Commits publicados `b314998`, `bdf8736`; sección propia publicada | Espejo fijado; INE, Censo 2018 como fuente primaria declarada |
+| A-Jonathan | Jonathan | Validación, reporte integral, Code Book Markdown/PDF y auditoría interna | Siete controles, 10 métricas y maestro de 21 variables reproducibles | Code Book maestro: ensamblaje, versión y pendientes | Commit de integración publicado `c871bd7` | Entregas de Anggie e Iris |
 
 ## Evidencia detallada de fases previas
 
@@ -182,17 +182,17 @@ Definir la estrategia de limpieza antes de tocar los datos.
 ```text
 fuente canónica (hecho) → catálogo territorial (hecho) → normalización + códigos INE (hecho)
 → duplicados: triage hecho; confirmar 718 probables + revisar 271 ambiguos
-→ validación + reporte + Code Book Markdown/PDF (automatizados) → aceptación institucional → publicación Git
+→ validación + reporte + Code Book Markdown/PDF (automatizados y publicados) → aceptación institucional
 ```
 
 1. **U4 — Limpieza automatizada:** reglas, bitácora y triage reproducibles; quedan confirmaciones institucionales.
 2. **U5/U6 — Validación y reporte:** mecanismos completos; cuatro controles conservan `requiere_revision`.
 3. **U8 — Code Book:** Markdown y PDF reproducibles con las 21 variables.
-4. **U9 — Entrega:** cinco materiales disponibles; CSV y contribuciones esperan aceptación/publicación.
+4. **U9 — Entrega:** cinco materiales publicados; el CSV espera aceptación institucional.
 
 ## Control de cierre
 
 - Ninguna unidad puede declararse completa solo por estar automatizada o descrita aquí.
 - Cada aceptación debe apuntar a código, prueba, dato o documento versionado y al commit de su responsable.
 - No se modifica la procedencia para resolver una discrepancia; se registra y se revisa.
-- La entrega se bloquea mientras R5e, R5f, R5g, R7, R9, RE o RT no estén **Completado**. R10 completo acredita documentación, no la aceptación del dataset.
+- La entrega institucional se bloquea mientras R5e, R5f, R5g, R7, R9 o RE no estén **Completado**. R10 y RT completos acreditan documentación y contribución publicada, no la aceptación del dataset.

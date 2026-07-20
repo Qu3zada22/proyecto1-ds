@@ -133,7 +133,7 @@ Datos de referencia vigentes:
 |---|---|
 | Anggie | Automatización y triage completados; confirmación de 718 probables, revisión de 271 ambiguos y aceptación telefónica pendientes. |
 | Iris | Hecho: catálogo reproducible, consistencia territorial, normalización, códigos derivados y Code Book territorial de 4 variables. |
-| Jonathan | Validación, reporte, Code Book Markdown/PDF y auditoría interna automatizados; publicación Git pendiente. |
+| Jonathan | Validación, reporte, Code Book Markdown/PDF y auditoría interna publicados en `c871bd7`. |
 
 Cada integrante debe aportar commits identificables y una sección concreta del Code Book. Los entregables futuros continúan como **planificados/no implementados** hasta que exista evidencia de aceptación.
 

@@ -205,13 +205,12 @@ def test_plan_mantiene_entregables_futuros_y_rutas_canonicas():
 
 def test_documentacion_refleja_el_cierre_territorial_sin_cerrar_el_proyecto():
     plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     code_book = (ROOT / "docs/code_book/variables_territoriales.md").read_text(
         encoding="utf-8"
     )
 
-    for document in (plan, readme, agents, code_book):
+    for document in (plan, agents, code_book):
         assert "espejo/conversión comunitaria" in document
         assert "INE, Censo 2018" in document
     assert "11,867×21" in plan
@@ -221,7 +220,7 @@ def test_documentacion_refleja_el_cierre_territorial_sin_cerrar_el_proyecto():
     assert "4 variables territoriales" in code_book
     assert "Iris" in plan and "Code Book territorial completo" in plan
 
-    for document in (plan, readme, agents):
+    for document in (plan, agents):
         assert "Anggie" in document
         assert "Jonathan" in document
         assert "pendient" in document.lower()
@@ -232,11 +231,10 @@ def test_documentacion_refleja_el_cierre_territorial_sin_cerrar_el_proyecto():
 
 def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     plan = (ROOT / "docs/planificacion.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     code_book = (ROOT / "docs/code_book/variables_anggie.md").read_text(encoding="utf-8")
 
-    for document in (plan, readme, agents):
+    for document in (plan, agents):
         assert all(value in document for value in ("718", "260", "11", "245"))
         assert "duplicad" in document.lower()
         assert "confirm" in document.lower() and "revis" in document.lower()
@@ -252,12 +250,7 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     for cells in requirement_rows.values():
         counts[cells[3]] += 1
     assert counts == {"Completado": 23, "Parcial": 6, "Faltante": 0, "Incierto": 0}
-    assert "| Completados | 23 |" in readme
-    assert "| Parciales | 6 |" in readme
-    assert "| Faltantes | 0 |" in readme
     assert requirement_rows["R8"][3] == "Completado"
-    assert "Code Book Markdown/PDF" in readme and "auditoría interna" in readme
-    assert readme.index("scripts/validar_territorio.py") < readme.index("scripts/validar_dataset.py")
     expected_states = {
         "R5a": "Completado", "R5e": "Parcial", "R5g": "Parcial",
         "R6": "Completado", "R7": "Parcial", "R9": "Parcial",
@@ -266,10 +259,7 @@ def test_documentacion_distingue_triage_de_revision_manual_de_anggie():
     assert {name: requirement_rows[name][3] for name in expected_states} == expected_states
     assert "docs/code_book.pdf" in requirement_rows["R10"][4]
     assert "978" in requirement_rows["R5g"][5]
-    assert "scripts/generar_code_book.py" in readme
-    assert "scripts/generar_code_book_pdf.py" in readme
-    assert "c871bd7" in plan and "c871bd7" in readme
-    assert "pendiente de publicación" not in readme.lower()
+    assert "c871bd7" in plan
     assert (ROOT / "docs/code_book.pdf").read_bytes().startswith(b"%PDF-")
 
 
@@ -288,25 +278,33 @@ def test_auditoria_interna_distingue_materiales_de_bloqueos():
     assert "integración sin publicar" not in audit.lower()
 
 
-def test_readme_ubica_los_cinco_entregables_y_evidencia_colaboracion_real():
+def test_readme_documenta_proposito_requisitos_ejecucion_y_salidas_principales():
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
-    assert "## Cinco entregables" in readme
+    assert all(item in readme for item in ("Diversificado", "MINEDUC", "Guatemala"))
     assert all(item in readme for item in (
-        "pipeline_limpieza.py",
-        "https://github.com/Qu3zada22/proyecto1-ds",
+        "Python 3.11",
+        "`uv`",
+        "Pandoc",
+        "Chromium",
+        "qpdf",
+        "pdfinfo",
+        "pdftotext",
+    ))
+    assert "uv sync" in readme
+    assert "uv run python pipeline_limpieza.py" in readme
+    assert "uv run python pipeline_limpieza.py --sin-pdf" in readme
+    assert "uv run python pipeline_limpieza.py --regenerar-catalogo" in readme
+    assert all(item in readme for item in (
+        "data/processed/establecimientos_diversificado_limpio.csv",
         "docs/code_book.md",
         "docs/code_book.pdf",
-        "data/processed/establecimientos_diversificado_limpio.csv",
     ))
-    assert "No existe un Google Docs" in readme
-    assert "7bac6048f68a116b30e93a65eedc4dcf87412407" in readme
-    assert "bdf87360b4fa7081dac347f373d6a739dc262c2e" in readme
 
 
 def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
     paths = (
-        "README.md", "AGENTS.md", "docs/planificacion.md", "docs/auditoria_final.md",
+        "AGENTS.md", "docs/planificacion.md", "docs/auditoria_final.md",
         "docs/code_book.md", "docs/code_book/variables_anggie.md",
         "openspec/specs/plan-entrega-restante/spec.md",
         "openspec/specs/limpieza-dataset-trazable/spec.md",
@@ -315,5 +313,5 @@ def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
 
     assert all("245" in document for document in documents)
     assert all("201" in document and ("históric" in document.lower() or "diagnóstico inicial" in document.lower()) for document in documents)
-    assert "23 `Completado`, 6 `Parcial`" in documents[2]
-    assert "NO APTO PARA CIERRE INSTITUCIONAL" in documents[3]
+    assert "23 `Completado`, 6 `Parcial`" in documents[1]
+    assert "NO APTO PARA CIERRE INSTITUCIONAL" in documents[2]

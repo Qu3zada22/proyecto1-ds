@@ -142,6 +142,16 @@ def test_maestro_mantiene_pendientes_rutas_portables_y_pdf_fuera_de_alcance():
     assert "data/source/establecimientos_diversificado_mineduc.csv" in markdown
 
 
+def test_maestro_documenta_markdown_versionado_y_commits_reales_del_equipo():
+    markdown = build_code_book(ANGGIE, TERRITORIAL, CLEAN)
+
+    assert "No existe un Google Docs" in markdown
+    assert "archivo Markdown versionado" in markdown
+    assert "7bac6048f68a116b30e93a65eedc4dcf87412407" in markdown
+    assert "bdf87360b4fa7081dac347f373d6a739dc262c2e" in markdown
+    assert "github.com/Qu3zada22/proyecto1-ds/commit/" in markdown
+
+
 def test_maestro_deriva_pendientes_de_evidencia_vigente(tmp_path):
     anggie, territorial, clean, _ = _temporary_inputs(tmp_path)
     duplicates = tmp_path / "outputs/tablas/duplicados_parciales.csv"

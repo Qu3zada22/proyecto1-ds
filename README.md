@@ -29,6 +29,22 @@ El avance actual incluye:
 
 La salida limpia actual sigue siendo una **versión parcial** y el proyecto permanece **NO APTO PARA CIERRE INSTITUCIONAL**. La aprobación versionada dejó 11 pares como `independiente_confirmado`, sin fusión ni borrado, y aplicó 6 normalizaciones telefónicas exactas. Permanecen 978 pares pendientes (718 `duplicado_probable` + 260 `revisar`), 245 teléfonos sospechosos y 145 filas territoriales. Las recomendaciones restantes no equivalen a aprobación institucional.
 
+## Cinco entregables
+
+| Material exigido | Ubicación | Regeneración o evidencia |
+|---|---|---|
+| Código fuente del pipeline | [`pipeline_limpieza.py`](pipeline_limpieza.py) | `uv run python pipeline_limpieza.py` ejecuta los CLI existentes desde la consolidación hasta la validación, los reportes y el Code Book. |
+| Repositorio | [github.com/Qu3zada22/proyecto1-ds](https://github.com/Qu3zada22/proyecto1-ds) | Contiene código, datos, pruebas, procedencia y documentación versionada. |
+| Área de trabajo del Code Book | [`docs/code_book.md`](docs/code_book.md) | `uv run python scripts/generar_code_book.py`, desde las secciones editables en `docs/code_book/`. |
+| Documento PDF | [`docs/code_book.pdf`](docs/code_book.pdf) | `uv run python scripts/generar_code_book_pdf.py`, a partir del Markdown generado. |
+| Data limpia | [`data/processed/establecimientos_diversificado_limpio.csv`](data/processed/establecimientos_diversificado_limpio.csv) | `uv run python scripts/limpiar_dataset.py`, desde la fuente canónica y el catálogo versionado. |
+
+No existe un Google Docs asociado a esta entrega. La rúbrica acepta Google Docs **o** un archivo Markdown; por ello, `docs/code_book.md` versionado en GitHub es el área de trabajo entregada. La colaboración se acredita con commits publicados, sin reinterpretar su autoría:
+
+- [Anggie: `7bac6048f68a116b30e93a65eedc4dcf87412407`](https://github.com/Qu3zada22/proyecto1-ds/commit/7bac6048f68a116b30e93a65eedc4dcf87412407), sección del Code Book de 17 variables.
+- [Iris: `bdf87360b4fa7081dac347f373d6a739dc262c2e`](https://github.com/Qu3zada22/proyecto1-ds/commit/bdf87360b4fa7081dac347f373d6a739dc262c2e), sección de variables territoriales.
+- La evidencia real adicional de los tres integrantes está inventariada en [`docs/auditoria_final.md`](docs/auditoria_final.md).
+
 ## Resultados actuales
 
 | Resultado | Valor |
@@ -120,6 +136,22 @@ Los HTML no se eliminan después de generar el CSV: son la evidencia que permite
 ```bash
 # Preparar el entorno
 uv sync
+
+# Ejecutar el pipeline completo con el catálogo territorial versionado
+uv run python pipeline_limpieza.py
+
+# Si se desea reconstruir también el catálogo desde el espejo fijado (requiere red)
+uv run python pipeline_limpieza.py --regenerar-catalogo
+
+# Omitir únicamente el PDF si no están instaladas sus herramientas externas
+uv run python pipeline_limpieza.py --sin-pdf
+```
+
+El orquestador se debe ejecutar desde la raíz del repositorio, se detiene ante el primer error y no duplica lógica de negocio. Regenerar artefactos no resuelve ni aprueba los 978 pares, 245 teléfonos o 145 filas territoriales pendientes.
+
+Los comandos individuales siguen disponibles para reproducir o diagnosticar una etapa concreta:
+
+```bash
 
 # Reconstruir el CSV canónico desde los HTML
 uv run python scripts/consolidar_crudos.py

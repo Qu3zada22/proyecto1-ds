@@ -288,6 +288,22 @@ def test_auditoria_interna_distingue_materiales_de_bloqueos():
     assert "integración sin publicar" not in audit.lower()
 
 
+def test_readme_ubica_los_cinco_entregables_y_evidencia_colaboracion_real():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "## Cinco entregables" in readme
+    assert all(item in readme for item in (
+        "pipeline_limpieza.py",
+        "https://github.com/Qu3zada22/proyecto1-ds",
+        "docs/code_book.md",
+        "docs/code_book.pdf",
+        "data/processed/establecimientos_diversificado_limpio.csv",
+    ))
+    assert "No existe un Google Docs" in readme
+    assert "7bac6048f68a116b30e93a65eedc4dcf87412407" in readme
+    assert "bdf87360b4fa7081dac347f373d6a739dc262c2e" in readme
+
+
 def test_documentacion_distingue_telefono_historico_de_pendiente_vigente():
     paths = (
         "README.md", "AGENTS.md", "docs/planificacion.md", "docs/auditoria_final.md",

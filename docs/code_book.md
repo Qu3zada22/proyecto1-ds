@@ -8,6 +8,9 @@ Este documento reúne las 21 variables del dataset limpio en su orden canónico.
 - **Fecha exacta de extracción:** 2026-07-14.
 - **Versión del conjunto limpio:** v0.1.0.
 - **Contribuciones:** Anggie documenta 17 variables; Iris documenta 4 variables territoriales; Jonathan ensambla el maestro.
+- **Área de trabajo aceptada:** No existe un Google Docs asociado a esta entrega; este archivo Markdown versionado en GitHub es el área de trabajo admitida por la rúbrica.
+- **Evidencia de Anggie:** [`7bac6048f68a116b30e93a65eedc4dcf87412407`](https://github.com/Qu3zada22/proyecto1-ds/commit/7bac6048f68a116b30e93a65eedc4dcf87412407), sección de 17 variables.
+- **Evidencia de Iris:** [`bdf87360b4fa7081dac347f373d6a739dc262c2e`](https://github.com/Qu3zada22/proyecto1-ds/commit/bdf87360b4fa7081dac347f373d6a739dc262c2e), sección de variables territoriales.
 - **Pendientes:** 978 pares (718 `duplicado_probable` + 260 `revisar`), 245 teléfonos sospechosos vigentes y 145 filas territoriales permanecen pendientes.
 - **Decisiones aprobadas:** 11 pares `independiente_confirmado` y 6 normalizaciones telefónicas exactas; no hubo fusiones ni borrados.
 - **Referencia histórica telefónica:** el diagnóstico inicial conserva 201 hallazgos históricos agregados por caracteres no numéricos; además, el control vigente detecta 50 teléfonos numéricos vigentes con longitud distinta de 8. La evidencia histórica agregada no establece correspondencia registro por registro.

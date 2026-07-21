@@ -8,10 +8,10 @@
 
 | Material | Ruta o referencia | Hash/evidencia | Estado |
 |---|---|---|---|
-| Código fuente | `src/proyecto1_ds/`, `scripts/` | Suite completa: 218 pruebas; `git diff --check` sin errores | Publicado en `c871bd7`. |
-| Repositorio | [github.com/Qu3zada22/proyecto1-ds](https://github.com/Qu3zada22/proyecto1-ds) | HEAD local/remoto `c871bd787ecc3cea6b9c29064b0414ae38f71f4f` | Disponible; integración publicada. |
-| Área de trabajo | `docs/code_book.md` | SHA-256 `c18e1caa2a5825bd695e9c550b5e94cf2a5f18d77a3055df80f2c45b9b4de7b9` | Completo: 21 variables. |
-| Documento PDF | `docs/code_book.pdf` | SHA-256 `acc66d84ed15d28352c10407c3295f76d00014c1a0c5eeb21dd0e3729a5bc327` | Completo: 13 páginas carta, texto extraíble, un título y hash del Markdown. |
+| Código fuente | `pipeline_limpieza.py`, `src/proyecto1_ds/`, `scripts/` | El orquestador raíz recorre el pipeline y delega la lógica existente. | Disponible localmente; publicación pendiente de estos cambios. |
+| Repositorio | [github.com/Qu3zada22/proyecto1-ds](https://github.com/Qu3zada22/proyecto1-ds) | HEAD local y `origin/HEAD` verificados: `e4624f899a45ea1069e0005e5df3b6ce4714e176`. | Disponible; estos cambios permanecen sin publicar por instrucción. |
+| Área de trabajo | [`docs/code_book.md`](code_book.md) | Markdown versionado, aceptado por la rúbrica como alternativa a Google Docs. | Completo: 21 variables; no existe un Google Docs asociado. |
+| Documento PDF | `docs/code_book.pdf` | SHA-256 `b58578d867063d328f8c690eb1c0aa62270e92ac45b8d029f08d1c93032847c5` | Completo: PDF generado y validado desde el Markdown maestro. |
 | Data limpia | `data/processed/establecimientos_diversificado_limpio.csv` | SHA-256 `86e411c5f6f11f2af67b2d1dddf199f17ddc5a7fd9b429347bb38dde9e17d521` | Disponible; aceptación institucional pendiente. |
 
 ## Evidencia automatizada
@@ -19,10 +19,10 @@
 | Control | Resultado |
 |---|---|
 | Matriz | 23 `Completado`, 6 `Parcial`, 0 `Faltante`, 0 `Incierto`. |
-| Pruebas | 218 pruebas pasan sin caché ni bytecode. |
+| Pruebas | 242 pruebas pasan. |
 | Validación | Exactamente 7 controles: 3 `cumple`, 4 `requiere_revision`, 0 `falla`. |
 | Reporte | Exactamente 10 métricas de rúbrica; no agrega una undécima fila artificial. |
-| Regeneración | Esta remediación regeneró por CLI exactamente 4 artefactos finales: validación, reporte integral, Code Book Markdown y PDF. |
+| Regeneración | `pipeline_limpieza.py` reprodujo las 11 etapas con el catálogo versionado; todos los datos y outputs protegidos permanecieron byte-idénticos, salvo el Code Book Markdown/PDF actualizado por su generador. |
 | PDF | qpdf válido; 13 páginas `letter`; texto extraíble; un título; 17 secciones Anggie y 4 Iris. |
 | Contratos | Limpieza publica `reporte_limpieza_base.csv`; el integral se conserva hasta su generador final. |
 | Linaje | Validación recomputa duplicados y territorio; el diagnóstico se identifica como histórico de la fuente. |
@@ -37,6 +37,11 @@
 | Jonathan (`jonialen`) | `6dab5c4`, `1811f3d`, `e7103a1`, `c8bbf3f`, `c871bd7` | Limpieza base, CLI, fuente canónica e integración final de artefactos reproducibles. |
 
 **RT satisfecho.** Anggie, Iris y Jonathan tienen commits identificables publicados y aportes visibles en las secciones del Code Book; `c871bd7` acredita la integración final de Jonathan.
+
+Evidencia directa solicitada para el área de trabajo:
+
+- Anggie: [`7bac6048f68a116b30e93a65eedc4dcf87412407`](https://github.com/Qu3zada22/proyecto1-ds/commit/7bac6048f68a116b30e93a65eedc4dcf87412407), 17 variables.
+- Iris: [`bdf87360b4fa7081dac347f373d6a739dc262c2e`](https://github.com/Qu3zada22/proyecto1-ds/commit/bdf87360b4fa7081dac347f373d6a739dc262c2e), variables territoriales.
 
 ## Bloqueos manuales
 
@@ -53,6 +58,7 @@
 
 ```bash
 uv sync
+uv run python pipeline_limpieza.py
 uv run python scripts/detectar_duplicados.py
 uv run python scripts/decidir_duplicados.py
 uv run python scripts/validar_territorio.py
